@@ -36,6 +36,8 @@
 #define COORD_Y_PORTA 38                                    //Coordenada da porta (coluna)
 #define N_DIAMANTES 19                                      //Número de diamantes pelo mapa (previamente contados)
 #define N_ROCHAS 105                                        //Número de rochas do mapa previamentes contadas
+#define VAGO2 -2
+#define VAGO -1
 #define PAREDE 0                                            //Codificação para a parede externa
 #define NADA 1                                          
 #define TIJOLO 2                                            //Codificação para os tijolos internos
@@ -76,7 +78,6 @@ typedef struct t_objeto {
     int q_obj;
     bool movimentando;
     bool morto;
-    int codificacao;
 } t_objeto;
 
 //Struct que comanda todos os itens do mapa
@@ -188,7 +189,6 @@ void carrega_mapa (int *largura, int *altura) {
     mapa = aloca_matriz_mapa (*largura, *altura);                       //Aloca espaço para a matriz na memória
 
     int item;
-    int k = 0;
 
     //Bloco: inicializa as estruturas da matriz
     for (int i = 0; i < *altura; i++) {
@@ -196,10 +196,6 @@ void carrega_mapa (int *largura, int *altura) {
             fscanf (arquivo, "%d ", &item);
             mapa[i][j].item = item;
             mapa[i][j].na_tela = 1;
-            if (item == DIAMANTE) {
-                mapa[i][j].codificacao = k;
-                k++;
-            }
         }
     }                                                                   //Fim do bloco
 
@@ -288,6 +284,7 @@ void destruindo_sprites () {
 
 //Função que inicializa o tipo objeto
 void inicializa_vetor_objetos (t_objeto *vetor, int largura_mapa, int altura_mapa, int ITEM) {
+
     
     int i = 0;
 
@@ -302,11 +299,12 @@ void inicializa_vetor_objetos (t_objeto *vetor, int largura_mapa, int altura_map
                 if (ITEM == ROCHA) {        
                     vetor[i].q_obj = 0;
                     vetor[i].morto = false;
+                    mapa[j][l].item = VAGO;
                 }
                 else {      
                     vetor[i].q_obj = 1;
                     vetor[i].morto = false;
-                    vetor[i].codificacao = mapa[j][l].codificacao;
+                    mapa[j][l].item = VAGO2;
                 }
                 i++;
             }
@@ -314,7 +312,7 @@ void inicializa_vetor_objetos (t_objeto *vetor, int largura_mapa, int altura_map
     }                                                               //Fim do bloco
 }
 //Função que testa a colisão do jogador com os objetos e toma as ações necessárias dependendo de onde o jogador bateu
-void colisao (t_objeto* diamantes, int *coord_p_x, int *coord_p_y, int *anterior_coord_p_x, int *anterior_coord_p_y, bool *flag_dimas) {
+void colisao (t_objeto* diamantes, t_objeto * rochas, int *coord_p_x, int *coord_p_y, int *anterior_coord_p_x, int *anterior_coord_p_y, bool *flag_dimas) {
 
     //Se o jogador bateu na parede, permanece na mesma posição
     if (mapa[*coord_p_x][*coord_p_y].item == PAREDE) {
@@ -327,19 +325,21 @@ void colisao (t_objeto* diamantes, int *coord_p_x, int *coord_p_y, int *anterior
         *coord_p_x = *anterior_coord_p_x;
     }
     //Se o jogador bateu na rocha, permanece na mesma posição
-    if (mapa[*coord_p_x][*coord_p_y].item == ROCHA) {               //Adicionar empurrar pedra
-        *coord_p_y = *anterior_coord_p_y;
-        *coord_p_x = *anterior_coord_p_x;
+    for (int i = 0; i < N_ROCHAS; i++){
+        if ((*coord_p_x == rochas[i].coord_x) && (*coord_p_y == rochas[i].coord_y)) {               //Adicionar empurrar pedra
+            *coord_p_y = *anterior_coord_p_y;
+            *coord_p_x = *anterior_coord_p_x;
+        }
     }
-
     //Se o jogador bateu no diamante, "pega" o diamante, toca o sample do diamante e atualiza a flag_dimas para 1, para avisar que ele pegou o diamante
-    if (mapa[*coord_p_x][*coord_p_y].item == DIAMANTE) {
-        al_play_sample (sample_coin, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
-        *flag_dimas = true;
-        //Aquele diamante que foi pego está morto
-        for (int i = 0; i < N_DIAMANTES; i++) {
-            if (diamantes[i].codificacao == mapa[*coord_p_x][*coord_p_y].codificacao)
-                diamantes[i].morto = true;
+    for (int i = 0; i < N_DIAMANTES; i++) {
+
+        if (((*coord_p_x == diamantes[i].coord_x) && (*coord_p_y == diamantes[i].coord_y)) && diamantes[i].morto == false) {
+            al_play_sample (sample_coin, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
+            *flag_dimas = true;
+            //Aquele diamante que foi pego está morto
+            diamantes[i].morto = true;
+            //mapa[diamantes[i].coord_x][diamantes[i].coord_y].item = NADA;
         }
     }
 
@@ -349,7 +349,7 @@ void colisao (t_objeto* diamantes, int *coord_p_x, int *coord_p_y, int *anterior
 
 }
 //Função que interpreta as teclas que o jogador aperta
-int controle (t_objeto* diamantes, ALLEGRO_EVENT *evento, int *coord_p_x, int *coord_p_y, int *direcao, bool* flag_dimas) {
+int controle (t_objeto* diamantes, t_objeto* rochas, ALLEGRO_EVENT *evento, int *coord_p_x, int *coord_p_y, int *direcao, bool* flag_dimas) {
 
     int ajuda = 0;
     int anterior_coord_p_x, anterior_coord_p_y;
@@ -379,7 +379,7 @@ int controle (t_objeto* diamantes, ALLEGRO_EVENT *evento, int *coord_p_x, int *c
         estado_jogo = TERMINOU;
 
     //Depois tratar as teclas, vê aonde o player colidiu toma as ações necessárias
-    colisao (diamantes,coord_p_x, coord_p_y, &anterior_coord_p_x, &anterior_coord_p_y, flag_dimas);
+    colisao (diamantes, rochas, coord_p_x, coord_p_y, &anterior_coord_p_x, &anterior_coord_p_y, flag_dimas);
     mapa[anterior_coord_p_x][anterior_coord_p_y].item = NADA;
     mapa[*coord_p_x][*coord_p_y].item = PLAYER;
 
@@ -389,7 +389,7 @@ int controle (t_objeto* diamantes, ALLEGRO_EVENT *evento, int *coord_p_x, int *c
 //Função que move as pedras e os diamante conforme as regras do jogo
 //Os itens ou vão para baixo, ou se movem em L caso o item de baixo seja uma pedra
 //É uma atualização por x ALLEGRO_EVENT_TIMER
-void gravidade (int *coord_x_obj, int *coord_y_obj, bool *movimentando, int ITEM) {
+void gravidade (t_objeto* objeto, int *coord_x_obj, int *coord_y_obj, bool *movimentando, int ITEM) {
 
     //Troca de acordo com o item tratado
     switch (ITEM)
@@ -407,33 +407,37 @@ void gravidade (int *coord_x_obj, int *coord_y_obj, bool *movimentando, int ITEM
         if (mapa[*coord_x_obj + 1][*coord_y_obj].item == NADA) {
             *movimentando = true;
             *coord_x_obj = *coord_x_obj + BAIXO;
-            mapa[*coord_x_obj][*coord_y_obj].item = ROCHA;
+            mapa[*coord_x_obj][*coord_y_obj].item = VAGO;
             mapa[*coord_x_obj - 1][*coord_y_obj].item = NADA;
             return;
         }
 
         //Se abaixo dele estiver com uma pedra
-        if (mapa[*coord_x_obj + 1][*coord_y_obj].item == ROCHA) {
-            //se a coluna inferior esquerda estiver vaga e, se a coluna loga a esquerda estiver vaga, atualiza o objeto para a esquerda e define a variável movimentando como verdadeira
-            //e a posição anterior do objeto fica como vazia  
-            if ((mapa[*coord_x_obj + 1][*coord_y_obj - 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj - 1].item == NADA)) {
-                *movimentando = true;
-                *coord_y_obj = *coord_y_obj + ESQUERDA;
-                mapa[*coord_x_obj][*coord_y_obj].item = ROCHA;
-                mapa[*coord_x_obj][*coord_y_obj + 1].item = NADA;
+        for (int i = 0; i < N_ROCHAS; i++) {
+            if ((*coord_x_obj + 1 == objeto[i].coord_x) && (*coord_y_obj == objeto[i].coord_y)) {
+                
+                //se a coluna inferior esquerda estiver vaga e, se a coluna loga a esquerda estiver vaga, atualiza o objeto para a esquerda e define a variável movimentando como verdadeira
+                //e a posição anterior do objeto fica como vazia  
+                if ((mapa[*coord_x_obj + 1][*coord_y_obj - 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj - 1].item == NADA)) {
+                    *movimentando = true;
+                    *coord_y_obj = *coord_y_obj + ESQUERDA;
+                    mapa[*coord_x_obj][*coord_y_obj].item = VAGO;
+                    mapa[*coord_x_obj][*coord_y_obj + 1].item = NADA;
+                }
+                //Caso não dê para ir a esquerda, testa para ver se foi para a direita
+                //se a coluna inferior direita estiver vaga e, se a coluna loga a direita estiver vaga, atualiza o objeto para a direita e define a variável movimentando como verdadeira
+                //e a posição anterior do objeto fica como vazia
+                else if ((mapa[*coord_x_obj + 1][*coord_y_obj + 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj + 1].item == NADA)) {
+                    *movimentando = true;
+                    *coord_y_obj = *coord_y_obj + DIREITA;
+                    mapa[*coord_x_obj][*coord_y_obj].item = VAGO;
+                    mapa[*coord_x_obj][*coord_y_obj - 1].item = NADA;
+                }
+                //Se o objeto estiver travado, então define a variável movimentando como falsa
+                else
+                    *movimentando = false;
+                break;
             }
-            //Caso não dê para ir a esquerda, testa para ver se foi para a direita
-            //se a coluna inferior direita estiver vaga e, se a coluna loga a direita estiver vaga, atualiza o objeto para a direita e define a variável movimentando como verdadeira
-            //e a posição anterior do objeto fica como vazia
-            else if ((mapa[*coord_x_obj + 1][*coord_y_obj + 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj + 1].item == NADA)) {
-                *movimentando = true;
-                *coord_y_obj = *coord_y_obj + DIREITA;
-                mapa[*coord_x_obj][*coord_y_obj].item = ROCHA;
-                mapa[*coord_x_obj][*coord_y_obj - 1].item = NADA;
-            }
-            //Se o objeto estiver travado, então define a variável movimentando como falsa
-            else
-                *movimentando = false;
         }
         break;
         //Se o item tratado for um diamante
@@ -449,37 +453,37 @@ void gravidade (int *coord_x_obj, int *coord_y_obj, bool *movimentando, int ITEM
             if (mapa[*coord_x_obj + 1][*coord_y_obj].item == NADA) {
                 *movimentando = true;
                 *coord_x_obj = *coord_x_obj + BAIXO;
-                mapa[*coord_x_obj][*coord_y_obj].item = DIAMANTE;
-                mapa[*coord_x_obj][*coord_y_obj].codificacao = mapa[*coord_x_obj - 1][*coord_y_obj].codificacao;
+                mapa[*coord_x_obj][*coord_y_obj].item = VAGO2;
                 mapa[*coord_x_obj - 1][*coord_y_obj].item = NADA;
                 return;    
             }
 
             //Se abaixo dele estiver com uma pedra
-            if ((mapa[*coord_x_obj + 1][*coord_y_obj].item == ROCHA)) {
-                //se a coluna inferior esquerda estiver vaga e, se a coluna loga a esquerda estiver vaga, atualiza o objeto para a esquerda e define a variável movimentando como verdadeira
-                //e a posição anterior do objeto fica como vazia  
-                if ((mapa[*coord_x_obj + 1][*coord_y_obj - 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj - 1].item == NADA)) {
-                    *movimentando = true;
-                    *coord_y_obj = *coord_y_obj + ESQUERDA;
-                    mapa[*coord_x_obj][*coord_y_obj].item = DIAMANTE;
-                    mapa[*coord_x_obj][*coord_y_obj].codificacao = mapa[*coord_x_obj][*coord_y_obj + 1].codificacao;
-                    mapa[*coord_x_obj][*coord_y_obj + 1].item = NADA;
+            for (int i = 0; i < N_ROCHAS; i++) {
+                if ((*coord_x_obj + 1 == objeto[i].coord_x) && (*coord_y_obj == objeto[i].coord_y)) {
+                    //se a coluna inferior esquerda estiver vaga e, se a coluna loga a esquerda estiver vaga, atualiza o objeto para a esquerda e define a variável movimentando como verdadeira
+                    //e a posição anterior do objeto fica como vazia  
+                    if ((mapa[*coord_x_obj + 1][*coord_y_obj - 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj - 1].item == NADA)) {
+                        *movimentando = true;
+                        *coord_y_obj = *coord_y_obj + ESQUERDA;
+                        mapa[*coord_x_obj][*coord_y_obj].item = VAGO2;
+                        mapa[*coord_x_obj][*coord_y_obj + 1].item = NADA;
+                    }
+                    //Caso não dê para ir a esquerda, testa para ver se foi para a direita
+                    //se a coluna inferior direita estiver vaga e, se a coluna loga a direita estiver vaga, atualiza o objeto para a direita e define a variável movimentando como verdadeira
+                    //e a posição anterior do objeto fica como vazia
+                    else if ((mapa[*coord_x_obj + 1][*coord_y_obj + 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj + 1].item == NADA)) {
+                        *movimentando = true;
+                        *coord_y_obj = *coord_y_obj + DIREITA;
+                        mapa[*coord_x_obj][*coord_y_obj].item = VAGO2;
+                        mapa[*coord_x_obj][*coord_y_obj - 1].item = NADA;
+                    }
                 }
-                //Caso não dê para ir a esquerda, testa para ver se foi para a direita
-                //se a coluna inferior direita estiver vaga e, se a coluna loga a direita estiver vaga, atualiza o objeto para a direita e define a variável movimentando como verdadeira
-                //e a posição anterior do objeto fica como vazia
-                else if ((mapa[*coord_x_obj + 1][*coord_y_obj + 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj + 1].item == NADA)) {
-                    *movimentando = true;
-                    *coord_y_obj = *coord_y_obj + DIREITA;
-                    mapa[*coord_x_obj][*coord_y_obj].item = DIAMANTE;
-                    mapa[*coord_x_obj][*coord_y_obj].codificacao = mapa[*coord_x_obj][*coord_y_obj - 1].codificacao;
-                    mapa[*coord_x_obj][*coord_y_obj - 1].item = NADA;
-                }
+                //Se o objeto estiver travado, então define a variável movimentando como falsa
+                else
+                   *movimentando = false;
+                break;
             }
-            //Se o objeto estiver travado, então define a variável movimentando como falsa
-            else
-                *movimentando = false;
         break; 
     }
 }
@@ -490,7 +494,7 @@ void deslizamento (t_objeto *objeto, int n_objetos, int frames_evento_morte) {
         
         //Se o objeto estiver na tela, aplica a gravidade nele
         if (objeto[i].morto == false)   
-            gravidade (&objeto[i].coord_x, &objeto[i].coord_y, &objeto[i].movimentando, objeto[i].q_obj);
+            gravidade (objeto,&objeto[i].coord_x, &objeto[i].coord_y, &objeto[i].movimentando, objeto[i].q_obj);
         
         //Apliquei um delay para a morte do jogador não ficar instantânea
         if (frames_evento_morte == DELAY_MORTE_JOGADOR)
@@ -517,7 +521,7 @@ void disp_post_draw () {
     
     al_flip_display ();
 }
-void desenha_mapa (int largura, int altura, t_player * player, int sprite_diamante) {
+void desenha_mapa (t_objeto *rochas, t_objeto * diamante, int largura, int altura, t_player * player, int sprite_diamante) {
 
     int aux_ani_dir = 14;
     int aux_ani_esq = 7;
@@ -543,21 +547,22 @@ void desenha_mapa (int largura, int altura, t_player * player, int sprite_diaman
                     else
                         al_draw_bitmap (sheet.player[player->tipo], j*LARGURA_BITMAP_BLOCO, i*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
                     break;
-                case ROCHA:     //Se for o bloco rocha
-                    al_draw_bitmap (sheet.mapa[5], j*LARGURA_BITMAP_BLOCO, i*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
-                    break;
-                case DIAMANTE:  //Se for o bloco diamante
-                    al_draw_bitmap (sheet.diamante[sprite_diamante], j*LARGURA_BITMAP_BLOCO, i*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
-                    break;
                 case TERRA:     //Se for o bloco terra
                     al_draw_bitmap (sheet.mapa[3], j*LARGURA_BITMAP_BLOCO, i*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
                     break;
                 case PORTA:     //Se for o bloco 
                     al_draw_bitmap (sheet.mapa[1], j*LARGURA_BITMAP_BLOCO, i*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
                     break;
-                default: break; //Se for casa vazia, não faz nada
+                default: break; //Se for casa vazia/vaga, não faz nada
             }
         }
+    }
+    for (int i = 0; i < N_ROCHAS; i++){
+        al_draw_bitmap (sheet.mapa[5], rochas[i].coord_y*LARGURA_BITMAP_BLOCO, rochas[i].coord_x*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
+    }
+    for (int i = 0; i < N_DIAMANTES; i++){
+        if (diamante[i].morto == false)
+            al_draw_bitmap (sheet.diamante[sprite_diamante], diamante[i].coord_y*LARGURA_BITMAP_BLOCO, diamante[i].coord_x*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
     }
 }
 //Desenha a pontução e o progresso do jogador
@@ -863,9 +868,7 @@ void estado_jogando (t_player player, t_objeto * rochas, t_objeto* diamantes, in
     int desenha = 0;
     int ajuda = 0;
     int sprite_diamante = 0;
-    int aux_direcao ;
     bool ida = true;
-    bool flag_keydown;
     bool flag_diamante = false;
 
     t_contaFrames delay;
@@ -911,7 +914,7 @@ void estado_jogando (t_player player, t_objeto * rochas, t_objeto* diamantes, in
             //Caso um tecla seja apertada, interpreta a ação dessa tecla
             //Também testa as colisões do jogador com o mapa, porém não ve se ele morreu
             case ALLEGRO_EVENT_KEY_CHAR :
-                ajuda = controle (diamantes, evento, &player.coord_x, &player.coord_y, &player.direcao, &flag_diamante);
+                ajuda = controle (diamantes, rochas, evento, &player.coord_x, &player.coord_y, &player.direcao, &flag_diamante);
                 break;
 
             //Caso o jogador feche o display, termina o jogo
@@ -930,7 +933,7 @@ void estado_jogando (t_player player, t_objeto * rochas, t_objeto* diamantes, in
             disp_pre_draw ();
             al_clear_to_color (al_map_rgb(0,0,0));
             desenha_hud ();
-            desenha_mapa (largura_mapa, altura_mapa, &player, sprite_diamante);
+            desenha_mapa (rochas, diamantes, largura_mapa, altura_mapa, &player, sprite_diamante);
             disp_post_draw ();
             desenha = 0;
         }
@@ -1060,7 +1063,7 @@ int main () {
     rochas = aloca_vetor_objeto (N_ROCHAS);                         //Aloca espaço na memória para um vetor t_objeto que cuidadará das rochas do mapa
     diamantes = aloca_vetor_objeto (N_DIAMANTES);                   //Aloca espaço na memória para um vetor t_objeto que cuidadará dos diamantes do mapa
 
-    //Inicializa ambas estruturas com as coordenadas iniciais dos objetos
+    //Inicializa ambas estruturas com as coordenadas iniciais dos 
     inicializa_vetor_objetos (rochas, largura_mapa, altura_mapa, ROCHA);
     inicializa_vetor_objetos (diamantes, largura_mapa, altura_mapa, DIAMANTE);
 
