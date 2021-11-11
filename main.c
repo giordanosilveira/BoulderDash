@@ -10,9 +10,10 @@
 #define FPS 60.0                                            //Taxa de atualização do jogo
 #define DELAY_MORTE_JOGADOR 20                              //Delay para a verificação da morte do jogador
 #define ATUALIZACAO_OBJETO 10                               //Delay para a atualização das posições das pedras
-#define DELAY_ANIMACAO 84
-#define DELAY_ANIMACAO_DIAMANTE 160
-#define DELAY_EASTER_EGG 1500
+#define DELAY_EXPLOSAO 40                                   //Delay para a troca de sprites das explosões
+#define DELAY_ANIMACAO 84                                   //Delay para a troca de sprites do jogador
+#define DELAY_ANIMACAO_DIAMANTE 160                         //Delay para a troca de sprites dos diamantes
+#define DELAY_EASTER_EGG 1500                               //Tempo para aparecer o easter egg
 
 #define MULT_DISPLAY 2                                      //Número para multiplicar o buffer para preencher formar o display
 #define CORRECAO_DISPLAY 23                                 //Para deixar uma sobra no display para a HUD
@@ -24,6 +25,7 @@
 #define PONTUACAO_MINIMA_F1 10                              //Pontuação mínima no começo da fase
 #define DIAMANTES_MINIMOS_F1 12                             //Diamantes mínimos para passar de fase
 
+#define N_VARIACOES_EXPLOSAO 8                              //Número de sprites de explosão no sprite Boulder_dash.png
 #define N_VARIACOES_DIAMANTE 8                              //Número de sprites de diamantes no sprite Boulder_dash.png
 #define N_VARIACOES_PLAYER 21                               //Número de sprites do player no sprite Boulder_dash.png
 #define N_ITENS_MAPA 6                                      //Número de sprites de itens do mapa no sprite Boulder_dash.png
@@ -36,16 +38,17 @@
 #define COORD_Y_PORTA 38                                    //Coordenada da porta (coluna)
 #define N_DIAMANTES 19                                      //Número de diamantes pelo mapa (previamente contados)
 #define N_ROCHAS 105                                        //Número de rochas do mapa previamentes contadas
-#define VAGO2 -2
-#define VAGO -1
+#define VAGO2 -2                                            //Codificação para dizer que a posição da matriz está ocupada por um diamante                
+#define VAGO -1                                             //Codificação para dizer que a posição da matriz está ocupada por uma rocha
 #define PAREDE 0                                            //Codificação para a parede externa
-#define NADA 1                                          
+#define NADA 1                                              //Codificação para dizer que não tem nada na casa da matriz
 #define TIJOLO 2                                            //Codificação para os tijolos internos
 #define PLAYER 3                                            //Codificação para o player
 #define ROCHA 4                                             //Codificação para a rochas do mapa
 #define DIAMANTE 5                                          //Codificação para os diamantes do mapa
 #define PORTA 6                                             //Codificação da porta do mapa
 #define TERRA 7                                             //Codificação para as terras do mapa
+#define EXPLODIDO 8                                         //Codificação para dizer que a posição da matriz está ocupada por uma explosão
 
 #define ESQUERDA -1                                         //Codificação quando o player/objeto vai para a esquerda
 #define DIREITA 1                                           //Codificação quando o player/objeto vai para a direita
@@ -62,6 +65,7 @@ typedef struct t_sprites {
     ALLEGRO_BITMAP* bitmap_sprites;
     ALLEGRO_BITMAP* player[21];
     ALLEGRO_BITMAP* mapa[6];
+    ALLEGRO_BITMAP* explosao[8]; 
     ALLEGRO_BITMAP* diamante[8]; 
 } t_sprites;
 
@@ -93,7 +97,7 @@ typedef struct t_contaFrames
     int evento_morte;
     int animacao_player;
     int animacao_diamante;
-    int vitoria;
+    int morte;
 } t_contaFrames;
 
 enum estados_t {MENU, JOGANDO, FIMDAPARTIDA, GAMEOVER, TERMINOU};     //Possíveis estados do jogo
@@ -111,12 +115,15 @@ ALLEGRO_SAMPLE *sample_coin;
 ALLEGRO_SAMPLE *sample_explosion;
 ALLEGRO_SAMPLE *sample_select;
 
+int morreu;
 
 int pontos;                                                 //Pontuação do jogador
 int contador_diamantes;                                     //contador de diamantes
 int diamante_minimos;                                       //Diamantes mínimos necessários para mudar a pontuação
 int pontuacao_minima;
 
+//Função que aloca um matriz do tipo mapa
+//Retorno o ponteiro da matriz
 t_mapa ** aloca_matriz_mapa (int largura, int altura) {
 
     t_mapa **matriz;
@@ -146,6 +153,8 @@ t_mapa ** aloca_matriz_mapa (int largura, int altura) {
 
 }
 
+//Função que aloca um vetor do tipo objeto
+//Retorno o ponteiro da vetor
 t_objeto *aloca_vetor_objeto (int tam_vetor) {
 
     t_objeto *vetor;
@@ -161,6 +170,7 @@ t_objeto *aloca_vetor_objeto (int tam_vetor) {
 
 }
 
+//Função que testa se uma variável ALLEGRO foi alocada
 void testa_inicializacao (bool test, const char *descricao) {
 
     //Teste para ver se inicializou corretamente
@@ -173,6 +183,7 @@ void testa_inicializacao (bool test, const char *descricao) {
 
 }
 
+//Função que carrega o mapa de uma arquivo para a memória
 void carrega_mapa (int *largura, int *altura) {
     
     FILE *arquivo;
@@ -203,6 +214,8 @@ void carrega_mapa (int *largura, int *altura) {
 
 }
 
+//Função que pega uma sub-bitmap de uma bitmap maior, é passada as coordenadas da sub-bitmap e as dimensões dela
+//É retornada a sub-bitmap 
 ALLEGRO_BITMAP* sprite_grab(int coord_x_inicial, int coord_y_inicial, int largura_sprite, int altura_sprite) {
     
     //Seleciona uma sub-sprite da imagem grande
@@ -214,6 +227,7 @@ ALLEGRO_BITMAP* sprite_grab(int coord_x_inicial, int coord_y_inicial, int largur
     
 }
 
+//Carrega as sprites de uma arquivo para a memória
 void inicializa_sprites () {
 
     //Carrega a imagem principal 
@@ -261,8 +275,20 @@ void inicializa_sprites () {
             k++;
         }
     }
+
+    //Carrega os sprites de explosao
+    sheet.explosao[0] = sprite_grab (128, 112,LARGURA_BITMAP_BLOCO, ALTURA_BITMAP_BLOCO);
+    sheet.explosao[1] = sprite_grab (128, 96,LARGURA_BITMAP_BLOCO, ALTURA_BITMAP_BLOCO);
+    sheet.explosao[2] = sprite_grab (128, 80,LARGURA_BITMAP_BLOCO, ALTURA_BITMAP_BLOCO);
+    sheet.explosao[3] = sprite_grab (128, 64,LARGURA_BITMAP_BLOCO, ALTURA_BITMAP_BLOCO);
+    sheet.explosao[4] = sprite_grab (112, 96,LARGURA_BITMAP_BLOCO, ALTURA_BITMAP_BLOCO);
+    sheet.explosao[5] = sprite_grab (112, 80,LARGURA_BITMAP_BLOCO, ALTURA_BITMAP_BLOCO);
+    sheet.explosao[6] = sprite_grab (112, 64, LARGURA_BITMAP_BLOCO, ALTURA_BITMAP_BLOCO);
+    sheet.explosao[7] = sprite_grab (112, 112,LARGURA_BITMAP_BLOCO, ALTURA_BITMAP_BLOCO);
+
 }
 
+//Destrói todas as sprites do jogo
 void destruindo_sprites () {
 
     //Desaloca a bitmap principal    
@@ -279,6 +305,11 @@ void destruindo_sprites () {
     //Percorre o vetor de bitmap e desaloca cada sprite
     for (int i = 0; i < N_VARIACOES_DIAMANTE; i++)
         al_destroy_bitmap (sheet.diamante[i]);
+
+    //Percorre o vetor de bitmap e desaloca cada sprite
+    for (int i = 0; i < N_VARIACOES_EXPLOSAO; i++) {
+        al_destroy_bitmap (sheet.explosao[i]);
+    }
 
 }
 
@@ -312,7 +343,7 @@ void inicializa_vetor_objetos (t_objeto *vetor, int largura_mapa, int altura_map
     }                                                               //Fim do bloco
 }
 //Função que testa a colisão do jogador com os objetos e toma as ações necessárias dependendo de onde o jogador bateu
-void colisao (t_objeto* diamantes, t_objeto * rochas, int *coord_p_x, int *coord_p_y, int *anterior_coord_p_x, int *anterior_coord_p_y, bool *flag_dimas) {
+void colisao (t_objeto* diamantes, t_objeto * rochas, int delay_pedra, int direcao, int *coord_p_x, int *coord_p_y, int *anterior_coord_p_x, int *anterior_coord_p_y, bool *flag_dimas) {
 
     //Se o jogador bateu na parede, permanece na mesma posição
     if (mapa[*coord_p_x][*coord_p_y].item == PAREDE) {
@@ -324,13 +355,27 @@ void colisao (t_objeto* diamantes, t_objeto * rochas, int *coord_p_x, int *coord
         *coord_p_y = *anterior_coord_p_y;
         *coord_p_x = *anterior_coord_p_x;
     }
-    //Se o jogador bateu na rocha, permanece na mesma posição
+    //Se o jogador bateu numa rocha, se deu delay necessário para que a pedra se mova foi cumprido, move a pedra
     for (int i = 0; i < N_ROCHAS; i++){
-        if ((*coord_p_x == rochas[i].coord_x) && (*coord_p_y == rochas[i].coord_y)) {               //Adicionar empurrar pedra
-            *coord_p_y = *anterior_coord_p_y;
-            *coord_p_x = *anterior_coord_p_x;
+        
+        //Se achou uma pedra
+        if ((*coord_p_x == rochas[i].coord_x) && (*coord_p_y == rochas[i].coord_y)) {               
+            //Se o delay necessário foi cumprido
+            if ((mapa[*coord_p_x][rochas[i].coord_y + direcao].item == NADA) && (delay_pedra == ATUALIZACAO_OBJETO)) {
+                    
+                rochas[i].coord_y = rochas[i].coord_y + direcao;    //Move a pedra
+                mapa[*coord_p_x][*coord_p_y].item = PLAYER;
+                mapa[*coord_p_x][*coord_p_y + direcao].item = VAGO;
+                    
+            }
+            //Caso contrário, o player permanece no mesmo lugar
+            else {
+                *coord_p_y = *anterior_coord_p_y;
+                *coord_p_x = *anterior_coord_p_x;
+            }
         }
     }
+    
     //Se o jogador bateu no diamante, "pega" o diamante, toca o sample do diamante e atualiza a flag_dimas para 1, para avisar que ele pegou o diamante
     for (int i = 0; i < N_DIAMANTES; i++) {
 
@@ -339,7 +384,6 @@ void colisao (t_objeto* diamantes, t_objeto * rochas, int *coord_p_x, int *coord
             *flag_dimas = true;
             //Aquele diamante que foi pego está morto
             diamantes[i].morto = true;
-            //mapa[diamantes[i].coord_x][diamantes[i].coord_y].item = NADA;
         }
     }
 
@@ -349,7 +393,7 @@ void colisao (t_objeto* diamantes, t_objeto * rochas, int *coord_p_x, int *coord
 
 }
 //Função que interpreta as teclas que o jogador aperta
-int controle (t_objeto* diamantes, t_objeto* rochas, ALLEGRO_EVENT *evento, int *coord_p_x, int *coord_p_y, int *direcao, bool* flag_dimas) {
+int controle (t_objeto* diamantes, t_objeto* rochas, ALLEGRO_EVENT *evento, int delay_pedra, int *coord_p_x, int *coord_p_y, int *direcao, bool* flag_dimas) {
 
     int ajuda = 0;
     int anterior_coord_p_x, anterior_coord_p_y;
@@ -357,154 +401,147 @@ int controle (t_objeto* diamantes, t_objeto* rochas, ALLEGRO_EVENT *evento, int 
     anterior_coord_p_y = *coord_p_y;
     
     
-    if (evento->keyboard.keycode == ALLEGRO_KEY_UP) {           //Se ele apertou para ir para cima, incrementa a variável que vai para cima
-        *coord_p_x = *coord_p_x + CIMA;
-        *direcao = 0;
-    }
-    else if (evento->keyboard.keycode == ALLEGRO_KEY_DOWN) {    //Se ele apertou para ir para baixo, incrementa a variável que vai para baixo
-        *coord_p_x = *coord_p_x + BAIXO;
-        *direcao = 0;
-    }
-    else if (evento->keyboard.keycode == ALLEGRO_KEY_LEFT) {    //Se ele apertou para ir para a esquerda, incrementa a variável que vai para a esquerda
-        *coord_p_y = *coord_p_y + ESQUERDA;
-        *direcao = ESQUERDA;
-    }
-    else if (evento->keyboard.keycode == ALLEGRO_KEY_RIGHT) {   //Se ele apertou para ir para direita, incrementa a variável que vai para a direita
-        *coord_p_y = *coord_p_y + DIREITA;
-        *direcao = DIREITA;
-    }
-    else if (evento->keyboard.keycode == ALLEGRO_KEY_H)         //Se ele apertou para ir para o menu ajuda, define a variável que vai para o menu ajuda como 1 
-        ajuda = 1;
-    else if (evento->keyboard.keycode == ALLEGRO_KEY_ESCAPE)    //Se ele apertou para ir para sair do jogo, define a variável que sai do jogo como 1
-        estado_jogo = TERMINOU;
+    //Cláusula para o jogador não mexer o player quando ele morre 
+    if (! morreu) {
+        if (evento->keyboard.keycode == ALLEGRO_KEY_UP) {           //Se ele apertou para ir para cima, incrementa a variável que vai para cima
+            *coord_p_x = *coord_p_x + CIMA;
+            *direcao = 0;
+        }
+        else if (evento->keyboard.keycode == ALLEGRO_KEY_DOWN) {    //Se ele apertou para ir para baixo, incrementa a variável que vai para baixo
+            *coord_p_x = *coord_p_x + BAIXO;
+            *direcao = 0;
+        }
+        else if (evento->keyboard.keycode == ALLEGRO_KEY_LEFT) {    //Se ele apertou para ir para a esquerda, incrementa a variável que vai para a esquerda
+            *coord_p_y = *coord_p_y + ESQUERDA;
+            *direcao = ESQUERDA;
+        }
+        else if (evento->keyboard.keycode == ALLEGRO_KEY_RIGHT) {   //Se ele apertou para ir para direita, incrementa a variável que vai para a direita
+            *coord_p_y = *coord_p_y + DIREITA;
+            *direcao = DIREITA;
+        }
+        else if (evento->keyboard.keycode == ALLEGRO_KEY_H)         //Se ele apertou para ir para o menu ajuda, define a variável que vai para o menu ajuda como 1 
+            ajuda = 1;
+        else if (evento->keyboard.keycode == ALLEGRO_KEY_ESCAPE)    //Se ele apertou para ir para sair do jogo, define a variável que sai do jogo como 1
+            estado_jogo = TERMINOU;
 
-    //Depois tratar as teclas, vê aonde o player colidiu toma as ações necessárias
-    colisao (diamantes, rochas, coord_p_x, coord_p_y, &anterior_coord_p_x, &anterior_coord_p_y, flag_dimas);
-    mapa[anterior_coord_p_x][anterior_coord_p_y].item = NADA;
-    mapa[*coord_p_x][*coord_p_y].item = PLAYER;
+        //Depois tratar as teclas, vê aonde o player colidiu toma as ações necessárias
+        colisao (diamantes, rochas, delay_pedra, *direcao, coord_p_x, coord_p_y, &anterior_coord_p_x, &anterior_coord_p_y, flag_dimas);
+        mapa[anterior_coord_p_x][anterior_coord_p_y].item = NADA;
+        mapa[*coord_p_x][*coord_p_y].item = PLAYER;
 
-    //Retorna a variável ajuda
-    return ajuda;
+        //Retorna a variável ajuda
+        return ajuda;
+    }
+    else {
+        return 0;
+    }
+
 }
 //Função que move as pedras e os diamante conforme as regras do jogo
 //Os itens ou vão para baixo, ou se movem em L caso o item de baixo seja uma pedra
 //É uma atualização por x ALLEGRO_EVENT_TIMER
-void gravidade (t_objeto* objeto, int *coord_x_obj, int *coord_y_obj, bool *movimentando, int ITEM) {
+void gravidade (t_objeto *secundario, t_objeto *primario, int tam_sec, int tam_pri, int *coord_x_obj, int *coord_y_obj, bool *movimentando) {
 
-    //Troca de acordo com o item tratado
-    switch (ITEM)
-    {
-        //Se o item tratado for uma pedra
-        case 0:
+    //Se o item abaixo for uma terra, não acontece nada
+    if ((mapa[*coord_x_obj + 1][*coord_y_obj].item == TERRA)) {
+        *movimentando = false;
+        return;
+    }   
 
-        //Se o item abaixo for uma terra, não acontece nada
-        if ((mapa[*coord_x_obj + 1][*coord_y_obj].item == TERRA)) {
-            *movimentando = false;
-            return;
-        }   
-
-        //Se não tiver nada abaixo, move o objeto para baixo, e define a variável movimentando como verdadeira
-        if (mapa[*coord_x_obj + 1][*coord_y_obj].item == NADA) {
-            *movimentando = true;
-            *coord_x_obj = *coord_x_obj + BAIXO;
-            mapa[*coord_x_obj][*coord_y_obj].item = VAGO;
-            mapa[*coord_x_obj - 1][*coord_y_obj].item = NADA;
-            return;
-        }
+    //Se não tiver nada abaixo, move o objeto para baixo, e define a variável movimentando como verdadeira
+    if (mapa[*coord_x_obj + 1][*coord_y_obj].item == NADA) {
+        *movimentando = true;
+        *coord_x_obj = *coord_x_obj + BAIXO;
+        mapa[*coord_x_obj][*coord_y_obj].item = VAGO;
+        mapa[*coord_x_obj - 1][*coord_y_obj].item = NADA;
+        return;
+    }
 
         //Se abaixo dele estiver com uma pedra
-        for (int i = 0; i < N_ROCHAS; i++) {
-            if ((*coord_x_obj + 1 == objeto[i].coord_x) && (*coord_y_obj == objeto[i].coord_y)) {
+    for (int i = 0; i < tam_pri; i++) {
+        if ((*coord_x_obj + 1 == primario[i].coord_x) && (*coord_y_obj == primario[i].coord_y)) {
                 
-                //se a coluna inferior esquerda estiver vaga e, se a coluna loga a esquerda estiver vaga, atualiza o objeto para a esquerda e define a variável movimentando como verdadeira
-                //e a posição anterior do objeto fica como vazia  
-                if ((mapa[*coord_x_obj + 1][*coord_y_obj - 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj - 1].item == NADA)) {
-                    *movimentando = true;
-                    *coord_y_obj = *coord_y_obj + ESQUERDA;
-                    mapa[*coord_x_obj][*coord_y_obj].item = VAGO;
-                    mapa[*coord_x_obj][*coord_y_obj + 1].item = NADA;
-                }
-                //Caso não dê para ir a esquerda, testa para ver se foi para a direita
-                //se a coluna inferior direita estiver vaga e, se a coluna loga a direita estiver vaga, atualiza o objeto para a direita e define a variável movimentando como verdadeira
-                //e a posição anterior do objeto fica como vazia
-                else if ((mapa[*coord_x_obj + 1][*coord_y_obj + 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj + 1].item == NADA)) {
-                    *movimentando = true;
-                    *coord_y_obj = *coord_y_obj + DIREITA;
-                    mapa[*coord_x_obj][*coord_y_obj].item = VAGO;
-                    mapa[*coord_x_obj][*coord_y_obj - 1].item = NADA;
-                }
-                //Se o objeto estiver travado, então define a variável movimentando como falsa
-                else
-                    *movimentando = false;
-                break;
-            }
-        }
-        break;
-        //Se o item tratado for um diamante
-        case 1:
-
-            //Se o item abaixo for uma terra, não acontece nada
-            if ((mapa[*coord_x_obj + 1][*coord_y_obj].item == TERRA)) {
-                *movimentando = false;
-                return;
-            }
-
-            //Se não tiver nada abaixo, move o objeto para baixo, e define a variável movimentando como verdadeira
-            if (mapa[*coord_x_obj + 1][*coord_y_obj].item == NADA) {
+            //se a coluna inferior esquerda estiver vaga e, se a coluna loga a esquerda estiver vaga, atualiza o objeto para a esquerda e define a variável movimentando como verdadeira
+            //e a posição anterior do objeto fica como vazia  
+            if ((mapa[*coord_x_obj + 1][*coord_y_obj - 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj - 1].item == NADA)) {
                 *movimentando = true;
-                *coord_x_obj = *coord_x_obj + BAIXO;
-                mapa[*coord_x_obj][*coord_y_obj].item = VAGO2;
-                mapa[*coord_x_obj - 1][*coord_y_obj].item = NADA;
-                return;    
+                *coord_y_obj = *coord_y_obj + ESQUERDA;
+                mapa[*coord_x_obj][*coord_y_obj].item = VAGO;
+                mapa[*coord_x_obj][*coord_y_obj + 1].item = NADA;
             }
-
-            //Se abaixo dele estiver com uma pedra
-            for (int i = 0; i < N_ROCHAS; i++) {
-                if ((*coord_x_obj + 1 == objeto[i].coord_x) && (*coord_y_obj == objeto[i].coord_y)) {
-                    //se a coluna inferior esquerda estiver vaga e, se a coluna loga a esquerda estiver vaga, atualiza o objeto para a esquerda e define a variável movimentando como verdadeira
-                    //e a posição anterior do objeto fica como vazia  
-                    if ((mapa[*coord_x_obj + 1][*coord_y_obj - 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj - 1].item == NADA)) {
-                        *movimentando = true;
-                        *coord_y_obj = *coord_y_obj + ESQUERDA;
-                        mapa[*coord_x_obj][*coord_y_obj].item = VAGO2;
-                        mapa[*coord_x_obj][*coord_y_obj + 1].item = NADA;
-                    }
-                    //Caso não dê para ir a esquerda, testa para ver se foi para a direita
-                    //se a coluna inferior direita estiver vaga e, se a coluna loga a direita estiver vaga, atualiza o objeto para a direita e define a variável movimentando como verdadeira
-                    //e a posição anterior do objeto fica como vazia
-                    else if ((mapa[*coord_x_obj + 1][*coord_y_obj + 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj + 1].item == NADA)) {
-                        *movimentando = true;
-                        *coord_y_obj = *coord_y_obj + DIREITA;
-                        mapa[*coord_x_obj][*coord_y_obj].item = VAGO2;
-                        mapa[*coord_x_obj][*coord_y_obj - 1].item = NADA;
-                    }
-                }
-                //Se o objeto estiver travado, então define a variável movimentando como falsa
-                else
-                   *movimentando = false;
-                break;
+            //Caso não dê para ir a esquerda, testa para ver se foi para a direita
+            //se a coluna inferior direita estiver vaga e, se a coluna loga a direita estiver vaga, atualiza o objeto para a direita e define a variável movimentando como verdadeira
+            //e a posição anterior do objeto fica como vazia
+            else if ((mapa[*coord_x_obj + 1][*coord_y_obj + 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj + 1].item == NADA)) {
+                *movimentando = true;
+                *coord_y_obj = *coord_y_obj + DIREITA;
+                mapa[*coord_x_obj][*coord_y_obj].item = VAGO;
+                mapa[*coord_x_obj][*coord_y_obj - 1].item = NADA;
             }
-        break; 
+            //Se o objeto estiver travado, então define a variável movimentando como falsa
+            else
+                *movimentando = false;
+        }
+    }
+    for (int i = 0; i < tam_sec; i++) {
+        if ((*coord_x_obj + 1 == secundario[i].coord_x) && (*coord_y_obj == secundario[i].coord_y)) {
+                
+            //se a coluna inferior esquerda estiver vaga e, se a coluna loga a esquerda estiver vaga, atualiza o objeto para a esquerda e define a variável movimentando como verdadeira
+            //e a posição anterior do objeto fica como vazia  
+            if ((mapa[*coord_x_obj + 1][*coord_y_obj - 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj - 1].item == NADA)) {
+                *movimentando = true;
+                *coord_y_obj = *coord_y_obj + ESQUERDA;
+                mapa[*coord_x_obj][*coord_y_obj].item = VAGO;
+                mapa[*coord_x_obj][*coord_y_obj + 1].item = NADA;
+            }
+            //Caso não dê para ir a esquerda, testa para ver se foi para a direita
+            //se a coluna inferior direita estiver vaga e, se a coluna loga a direita estiver vaga, atualiza o objeto para a direita e define a variável movimentando como verdadeira
+            //e a posição anterior do objeto fica como vazia
+            else if ((mapa[*coord_x_obj + 1][*coord_y_obj + 1].item == NADA) && (mapa[*coord_x_obj][*coord_y_obj + 1].item == NADA)) {
+                *movimentando = true;
+                *coord_y_obj = *coord_y_obj + DIREITA;
+                mapa[*coord_x_obj][*coord_y_obj].item = VAGO;
+                mapa[*coord_x_obj][*coord_y_obj - 1].item = NADA;
+            }
+            //Se o objeto estiver travado, então define a variável movimentando como falsa
+            else
+                *movimentando = false;
+        }
     }
 }
 //Função que trata da atualização dos objetos
-void deslizamento (t_objeto *objeto, int n_objetos, int frames_evento_morte) {
+void deslizamento (t_objeto * rochas, t_objeto *diamantes, int frames_evento_morte) {
 
-    for (int i = 0; i < n_objetos; i++) {
+    for (int i = 0; i < N_ROCHAS; i++) {
         
-        //Se o objeto estiver na tela, aplica a gravidade nele
-        if (objeto[i].morto == false)   
-            gravidade (objeto,&objeto[i].coord_x, &objeto[i].coord_y, &objeto[i].movimentando, objeto[i].q_obj);
+        //Se a rocha não estiver morta, aplica a gravidade nela
+        if (rochas[i].morto == false)   
+            gravidade (diamantes, rochas, N_DIAMANTES, N_ROCHAS, &rochas[i].coord_x, &rochas[i].coord_y, &rochas[i].movimentando);
         
         //Apliquei um delay para a morte do jogador não ficar instantânea
         if (frames_evento_morte == DELAY_MORTE_JOGADOR)
 
             //Se o jogador morreu, toca o sample explosão e o jogo termina
-            if ((mapa[objeto[i].coord_x + 1][objeto[i].coord_y].item == PLAYER) && (objeto[i].movimentando == true)) {
+            if ((mapa[rochas[i].coord_x + 1][rochas[i].coord_y].item == PLAYER) && (rochas[i].movimentando == true)) {
                 al_play_sample (sample_explosion, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
-                estado_jogo = GAMEOVER;
+                morreu = 1;
             }
     }
+    for (int i = 0; i < N_DIAMANTES; i++) {
+        
+        //Se o diamante não estiver morto, aplica a gravidade nele
+        if (diamantes[i].morto == false)   
+            gravidade (rochas, diamantes, N_ROCHAS, N_DIAMANTES, &diamantes[i].coord_x, &diamantes[i].coord_y, &diamantes[i].movimentando);
+        
+        //Apliquei um delay para a morte do jogador não ficar instantânea
+        if (frames_evento_morte == DELAY_MORTE_JOGADOR)
+
+            //Se o jogador morreu, toca o sample explosão e o jogo termina 
+            if ((mapa[diamantes[i].coord_x + 1][diamantes[i].coord_y].item == PLAYER) && (diamantes[i].movimentando == true)) {
+                al_play_sample (sample_explosion, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
+                morreu = 1;
+            }
+    } 
 }
 //Desenha no buffer bitmap
 void disp_pre_draw () {
@@ -521,7 +558,8 @@ void disp_post_draw () {
     
     al_flip_display ();
 }
-void desenha_mapa (t_objeto *rochas, t_objeto * diamante, int largura, int altura, t_player * player, int sprite_diamante) {
+//Função que printa o mapa
+void desenha_mapa (t_objeto *rochas, t_objeto * diamante, int largura, int altura, t_player * player, int sprite_diamante, int sprite_explosao) {
 
     int aux_ani_dir = 14;
     int aux_ani_esq = 7;
@@ -529,15 +567,16 @@ void desenha_mapa (t_objeto *rochas, t_objeto * diamante, int largura, int altur
     //Percorre a matriz e, de acordo com o item da matriz, printa o correto
     for (int i = 0; i < altura; i++) {
         for (int j = 0; j < largura; j++) {
+            
             switch (mapa[i][j].item) {
 
                 case PAREDE:    //Se for o bloco parede                           
-                    al_draw_bitmap (sheet.mapa[2], j*LARGURA_BITMAP_BLOCO, i*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
+                    al_draw_bitmap (sheet.mapa[0], j*LARGURA_BITMAP_BLOCO, i*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
                     break;
                 case TIJOLO:    //Se for o bloco tijolo
                     al_draw_bitmap (sheet.mapa[2], j*LARGURA_BITMAP_BLOCO, i*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
                     break; 
-                case PLAYER:    //Se for o bloco player
+                case PLAYER:    //Se for o bloco player, vê qual direção ele está indo para printar a sprite certa
                     if (player->direcao == DIREITA) {
                         al_draw_bitmap (sheet.player[player->tipo + aux_ani_dir], j*LARGURA_BITMAP_BLOCO, i*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
                     }
@@ -553,13 +592,21 @@ void desenha_mapa (t_objeto *rochas, t_objeto * diamante, int largura, int altur
                 case PORTA:     //Se for o bloco 
                     al_draw_bitmap (sheet.mapa[1], j*LARGURA_BITMAP_BLOCO, i*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
                     break;
+                case EXPLODIDO:
+                    al_draw_bitmap (sheet.explosao[sprite_explosao], j*LARGURA_BITMAP_BLOCO, i*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
+                    break;
+
                 default: break; //Se for casa vazia/vaga, não faz nada
             }
+            
         }
     }
+    //Percorre o vetor de rochas e printa elas caso não estejam mortas
     for (int i = 0; i < N_ROCHAS; i++){
-        al_draw_bitmap (sheet.mapa[5], rochas[i].coord_y*LARGURA_BITMAP_BLOCO, rochas[i].coord_x*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
+        if (rochas[i].morto == false)
+            al_draw_bitmap (sheet.mapa[5], rochas[i].coord_y*LARGURA_BITMAP_BLOCO, rochas[i].coord_x*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
     }
+    //Percorre o vetor de diamante e printa eles caso não estejam mortos
     for (int i = 0; i < N_DIAMANTES; i++){
         if (diamante[i].morto == false)
             al_draw_bitmap (sheet.diamante[sprite_diamante], diamante[i].coord_y*LARGURA_BITMAP_BLOCO, diamante[i].coord_x*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
@@ -617,6 +664,8 @@ void inicializa_variaveis (int *largura_mapa, int *altura_mapa, t_player *player
     carrega_mapa (largura_mapa, altura_mapa);                       //Carrega o mapa
 
 
+    morreu = 0;                                                     //Inicializa a variável que diz se o jogador morreu
+
     //Inicializa a estrutura t_player
     player->coord_x = PLAYER_COORD_X;
     player->coord_y = PLAYER_COORD_Y;
@@ -641,6 +690,7 @@ void desenha_menu () {
     al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2 + 100 + 10, ALLEGRO_ALIGN_CENTER, "APERTE 'ESC' PARA SAIR");
 
 }
+//Função que controla o menu do jogo
 void estado_menu (unsigned char *key, ALLEGRO_EVENT *evento) {
 
     //Enquanto estiver no menu
@@ -679,7 +729,7 @@ void desenha_ajuda (int easter_egg, int delay_animacao, int *sprite_animacao, bo
     al_clear_to_color (al_map_rgb(0,0,0));
     //Se der o tempo necessário para mostrar o easter egg, mostra o easter egg
     if (easter_egg == DELAY_EASTER_EGG) {
-        //A animção do jogador segue o mesmo modelo da função anima jogador
+        //A animção do jogador segue o mesmo modelo da função anima_jogador
         if (*ida) {
             if (delay_animacao % (DELAY_ANIMACAO/7) == 0){
                 *sprite_animacao = *sprite_animacao + 1;
@@ -849,10 +899,9 @@ void atualiza_objetos_mapa (int *atualizacao_objeto, t_objeto * rochas, t_objeto
 
     //Apliquei um delay para a atualização dos objetos do mapa, senão fica muito rapido
     //Só atualiza a cada 10 ALLEGRO_EVENT_TIMER
-    //Se chegar o tempo de atualizar aplica o deslizamento
+    //Se chegar o tempo de atualizar, aplica o deslizamento
     if (*atualizacao_objeto == ATUALIZACAO_OBJETO) {
-        deslizamento (rochas, N_ROCHAS, *delay_morte);
-        deslizamento (diamantes, N_DIAMANTES, *delay_morte);
+        deslizamento (rochas, diamantes, *delay_morte);
         *atualizacao_objeto = 0;
     }
 
@@ -862,12 +911,75 @@ void atualiza_objetos_mapa (int *atualizacao_objeto, t_objeto * rochas, t_objeto
         *delay_morte = 0;
 
 }
+
+//Função que destroi todo o entorno do jogador
+void localiza_explosao (t_objeto*rochas, t_objeto *diamantes, t_player player) {
+
+    //Percorre todas as pedras e, se achar uma pedra que está logo entorno do jogador, destroi ela
+    for (int i = 0; i < N_ROCHAS; i++) {
+        //If's gigantescos que basicamente testam se acham uma rocha entorno do jogador, um quadrado de 3x3
+        if (((rochas[i].coord_x == player.coord_x) && (rochas[i].coord_y == player.coord_y + DIREITA)) || ((rochas[i].coord_x == player.coord_x) && (rochas[i].coord_y == player.coord_y + ESQUERDA)))
+            rochas[i].morto = true;
+        
+        if (((rochas[i].coord_x == player.coord_x + BAIXO) && (rochas[i].coord_y == player.coord_y + DIREITA)) || ((rochas[i].coord_x == player.coord_x + BAIXO) && (rochas[i].coord_y == player.coord_y + ESQUERDA)) 
+                                                                                                                        || ((rochas[i].coord_x == player.coord_x + BAIXO) && (rochas[i].coord_y == player.coord_y)))
+            rochas[i].morto = true;
+        
+        if (((rochas[i].coord_x == player.coord_x + CIMA) && (rochas[i].coord_y == player.coord_y + DIREITA)) || ((rochas[i].coord_x == player.coord_x + CIMA) && (rochas[i].coord_y == player.coord_y + ESQUERDA)) 
+                                                                                                                        || ((rochas[i].coord_x == player.coord_x + CIMA) && (rochas[i].coord_y == player.coord_y)))
+            rochas[i].morto = true;
+        
+    }
+
+    //Percorre todos os diamantes e, se achar um diamante que está logo entorno do jogador, destroi ele
+    for (int i = 0; i < N_DIAMANTES; i++) {
+        //If's gigantescos que basicamente testam se acham um diamante entorno do jogador, um quadrado de 3x3
+        if (((diamantes[i].coord_x == player.coord_x) && (diamantes[i].coord_y == player.coord_y + DIREITA)) || ((diamantes[i].coord_x == player.coord_x) && (diamantes[i].coord_y == player.coord_y + ESQUERDA)))
+            diamantes[i].morto = true;
+        
+        if (((diamantes[i].coord_x == player.coord_x + BAIXO) && (diamantes[i].coord_y == player.coord_y + DIREITA)) || ((diamantes[i].coord_x == player.coord_x + BAIXO) && (diamantes[i].coord_y == player.coord_y + ESQUERDA)) 
+                                                                                                                        || ((diamantes[i].coord_x == player.coord_x + BAIXO) && (diamantes[i].coord_y == player.coord_y)))
+            diamantes[i].morto = true;
+        
+        if (((diamantes[i].coord_x == player.coord_x + CIMA) && (diamantes[i].coord_y == player.coord_y + DIREITA)) || ((diamantes[i].coord_x == player.coord_x + CIMA) && (diamantes[i].coord_y == player.coord_y + ESQUERDA)) 
+                                                                                                                        || ((diamantes[i].coord_x == player.coord_x + CIMA) && (diamantes[i].coord_y == player.coord_y)))
+            diamantes[i].morto = true;
+    }
+
+    //Destroi o mapa logo ao entorno do jogador, um quadrado de 3x3
+    mapa[player.coord_x][player.coord_y].item = EXPLODIDO;
+    mapa[player.coord_x][player.coord_y + DIREITA].item = EXPLODIDO;
+    mapa[player.coord_x][player.coord_y + ESQUERDA].item = EXPLODIDO;
+    mapa[player.coord_x + BAIXO][player.coord_y].item = EXPLODIDO;
+    mapa[player.coord_x + BAIXO][player.coord_y + DIREITA].item = EXPLODIDO;
+    mapa[player.coord_x + BAIXO][player.coord_y + ESQUERDA].item = EXPLODIDO;
+    mapa[player.coord_x + CIMA][player.coord_y].item = EXPLODIDO;
+    mapa[player.coord_x + CIMA][player.coord_y + DIREITA].item = EXPLODIDO;
+    mapa[player.coord_x + CIMA][player.coord_y + ESQUERDA].item = EXPLODIDO;
+
+}
+
+void anima_explosao (int *sprite_explosao, int *delay_morte) {
+
+    //se der o tempo necessário para mudar a animação da explosão, troca o sprite da explosão
+    if (*delay_morte % (DELAY_EXPLOSAO/8) == 0) {
+        *sprite_explosao = *sprite_explosao + 1;
+        //Cláusula necessário para as variáveis não crescerem infinitamente
+        if (*sprite_explosao == 7) {
+            *delay_morte = 0;
+            *sprite_explosao = 0;
+            estado_jogo = GAMEOVER;                                 //Muda o estado do jogo para game over
+        }
+    }
+    
+}
 //Estado que controla os acontecimentos do jogo
 void estado_jogando (t_player player, t_objeto * rochas, t_objeto* diamantes, int largura_mapa, int altura_mapa, unsigned char * key, ALLEGRO_EVENT *evento) {
 
     int desenha = 0;
     int ajuda = 0;
     int sprite_diamante = 0;
+    int sprite_explosao = 0;
     bool ida = true;
     bool flag_diamante = false;
 
@@ -891,6 +1003,13 @@ void estado_jogando (t_player player, t_objeto * rochas, t_objeto* diamantes, in
                     ajuda = 0;
                 }
  
+                //Se o jogador morreu, trata desse evento
+                if (morreu) {
+                    localiza_explosao (rochas, diamantes, player);
+                    anima_explosao (&sprite_explosao, &delay.morte);
+                }
+                delay.morte++;
+
                 //Cuida da pontuação/progresso do jogador
                 pontuacao (&flag_diamante);
 
@@ -914,7 +1033,7 @@ void estado_jogando (t_player player, t_objeto * rochas, t_objeto* diamantes, in
             //Caso um tecla seja apertada, interpreta a ação dessa tecla
             //Também testa as colisões do jogador com o mapa, porém não ve se ele morreu
             case ALLEGRO_EVENT_KEY_CHAR :
-                ajuda = controle (diamantes, rochas, evento, &player.coord_x, &player.coord_y, &player.direcao, &flag_diamante);
+                ajuda = controle (diamantes, rochas, evento, delay.atualizacao_objeto, &player.coord_x, &player.coord_y, &player.direcao, &flag_diamante);
                 break;
 
             //Caso o jogador feche o display, termina o jogo
@@ -933,7 +1052,7 @@ void estado_jogando (t_player player, t_objeto * rochas, t_objeto* diamantes, in
             disp_pre_draw ();
             al_clear_to_color (al_map_rgb(0,0,0));
             desenha_hud ();
-            desenha_mapa (rochas, diamantes, largura_mapa, altura_mapa, &player, sprite_diamante);
+            desenha_mapa (rochas, diamantes, largura_mapa, altura_mapa, &player, sprite_diamante, sprite_explosao);
             disp_post_draw ();
             desenha = 0;
         }
