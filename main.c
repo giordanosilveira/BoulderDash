@@ -14,6 +14,8 @@
 #define DELAY_ANIMACAO 84                                   //Delay para a troca de sprites do jogador
 #define DELAY_ANIMACAO_DIAMANTE 160                         //Delay para a troca de sprites dos diamantes
 #define DELAY_EASTER_EGG 1500                               //Tempo para aparecer o easter egg
+#define TEMPORIZADOR 60
+#define TEMPO_TOTAL 120
 
 #define MULT_DISPLAY 2                                      //Número para multiplicar o buffer para preencher formar o display
 #define CORRECAO_DISPLAY 23                                 //Para deixar uma sobra no display para a HUD
@@ -98,6 +100,7 @@ typedef struct t_contaFrames
     int animacao_player;
     int animacao_diamante;
     int morte;
+    int tempo;
 } t_contaFrames;
 
 enum estados_t {MENU, JOGANDO, FIMDAPARTIDA, GAMEOVER, TERMINOU};     //Possíveis estados do jogo
@@ -117,6 +120,8 @@ ALLEGRO_SAMPLE *sample_select;
 
 int morreu;
 
+int tempo;
+int score;                                                  //última pontuação do jogador
 int pontos;                                                 //Pontuação do jogador
 int contador_diamantes;                                     //contador de diamantes
 int diamante_minimos;                                       //Diamantes mínimos necessários para mudar a pontuação
@@ -343,7 +348,7 @@ void inicializa_vetor_objetos (t_objeto *vetor, int largura_mapa, int altura_map
     }                                                               //Fim do bloco
 }
 //Função que testa a colisão do jogador com os objetos e toma as ações necessárias dependendo de onde o jogador bateu
-void colisao (t_objeto* diamantes, t_objeto * rochas, int delay_pedra, int direcao, int *coord_p_x, int *coord_p_y, int *anterior_coord_p_x, int *anterior_coord_p_y, bool *flag_dimas) {
+void colisao (FILE*arq, t_objeto* diamantes, t_objeto * rochas, int delay_pedra, int direcao, int *coord_p_x, int *coord_p_y, int *anterior_coord_p_x, int *anterior_coord_p_y, bool *flag_dimas) {
 
     //Se o jogador bateu na parede, permanece na mesma posição
     if (mapa[*coord_p_x][*coord_p_y].item == PAREDE) {
@@ -388,12 +393,16 @@ void colisao (t_objeto* diamantes, t_objeto * rochas, int delay_pedra, int direc
     }
 
     //Se o jogador chegou na porta, ele ganhou
-    if (mapa[*coord_p_x][*coord_p_y].item == PORTA)
+    if (mapa[*coord_p_x][*coord_p_y].item == PORTA) {
+        if (pontos + tempo > score) {
+            fprintf (arq, "%d\n", pontos + tempo);
+        }
         estado_jogo = FIMDAPARTIDA;
+    }
 
 }
 //Função que interpreta as teclas que o jogador aperta
-int controle (t_objeto* diamantes, t_objeto* rochas, ALLEGRO_EVENT *evento, int delay_pedra, int *coord_p_x, int *coord_p_y, int *direcao, bool* flag_dimas) {
+int controle (FILE *arq, t_objeto* diamantes, t_objeto* rochas, ALLEGRO_EVENT *evento, int delay_pedra, int *coord_p_x, int *coord_p_y, int *direcao, bool* flag_dimas) {
 
     int ajuda = 0;
     int anterior_coord_p_x, anterior_coord_p_y;
@@ -425,7 +434,7 @@ int controle (t_objeto* diamantes, t_objeto* rochas, ALLEGRO_EVENT *evento, int 
             estado_jogo = TERMINOU;
 
         //Depois tratar as teclas, vê aonde o player colidiu toma as ações necessárias
-        colisao (diamantes, rochas, delay_pedra, *direcao, coord_p_x, coord_p_y, &anterior_coord_p_x, &anterior_coord_p_y, flag_dimas);
+        colisao (arq, diamantes, rochas, delay_pedra, *direcao, coord_p_x, coord_p_y, &anterior_coord_p_x, &anterior_coord_p_y, flag_dimas);
         mapa[anterior_coord_p_x][anterior_coord_p_y].item = NADA;
         mapa[*coord_p_x][*coord_p_y].item = PLAYER;
 
@@ -510,7 +519,7 @@ void gravidade (t_objeto *secundario, t_objeto *primario, int tam_sec, int tam_p
     }
 }
 //Função que trata da atualização dos objetos
-void deslizamento (t_objeto * rochas, t_objeto *diamantes, int frames_evento_morte) {
+void deslizamento (FILE*arq, t_objeto * rochas, t_objeto *diamantes, int frames_evento_morte) {
 
     for (int i = 0; i < N_ROCHAS; i++) {
         
@@ -524,6 +533,9 @@ void deslizamento (t_objeto * rochas, t_objeto *diamantes, int frames_evento_mor
             //Se o jogador morreu, toca o sample explosão e o jogo termina
             if ((mapa[rochas[i].coord_x + 1][rochas[i].coord_y].item == PLAYER) && (rochas[i].movimentando == true)) {
                 al_play_sample (sample_explosion, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
+                if (pontos + tempo > score) {
+                    fprintf (arq, "%d\n", pontos + tempo);
+                }
                 morreu = 1;
             }
     }
@@ -539,6 +551,9 @@ void deslizamento (t_objeto * rochas, t_objeto *diamantes, int frames_evento_mor
             //Se o jogador morreu, toca o sample explosão e o jogo termina 
             if ((mapa[diamantes[i].coord_x + 1][diamantes[i].coord_y].item == PLAYER) && (diamantes[i].movimentando == true)) {
                 al_play_sample (sample_explosion, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
+                if (pontos + tempo > score) {
+                    fprintf (arq, "%d\n", pontos + tempo);
+                }
                 morreu = 1;
             }
     } 
@@ -619,9 +634,10 @@ void desenha_hud () {
     al_draw_textf (font, al_map_rgb(255, 255, 255), 10 + 33, 7, 0, "%d", pontuacao_minima);
     al_draw_textf (font, al_map_rgb(255, 255, 0), LARGURA_BUFFER/2, 7, 0, "%d", contador_diamantes);
     al_draw_textf (font, al_map_rgb(255, 255, 255), LARGURA_BUFFER/2 + 40, 7, 0, "%d", pontos);
+    al_draw_textf (font, al_map_rgb(255, 255, 255), LARGURA_BUFFER/2 + 80, 7, 0, "%d", tempo);
 }
 
-void inicializa_variaveis (int *largura_mapa, int *altura_mapa, t_player *player) {
+void inicializa_variaveis ( int *largura_mapa, int *altura_mapa, t_player *player) {
 
 
     testa_inicializacao (al_init (), "a biblioteca allegro :(");        //Instala a biblioteca allegro e testa para ver se abriu direito
@@ -664,6 +680,7 @@ void inicializa_variaveis (int *largura_mapa, int *altura_mapa, t_player *player
     carrega_mapa (largura_mapa, altura_mapa);                       //Carrega o mapa
 
 
+    tempo = TEMPO_TOTAL;
     morreu = 0;                                                     //Inicializa a variável que diz se o jogador morreu
 
     //Inicializa a estrutura t_player
@@ -677,6 +694,7 @@ void inicializa_variaveis (int *largura_mapa, int *altura_mapa, t_player *player
     contador_diamantes = 0;
     diamante_minimos = DIAMANTES_MINIMOS_F1;
     pontuacao_minima = diamante_minimos;
+
 
 }
 //Desenhas as mesagens do menu
@@ -895,13 +913,13 @@ void anima_diamantes (int *delay_animacao, int *sprite_diamante) {
 
 }
 //Função responsável para atualizar os objetos do mapa
-void atualiza_objetos_mapa (int *atualizacao_objeto, t_objeto * rochas, t_objeto *diamantes, int *delay_morte) {
+void atualiza_objetos_mapa (FILE *arq, int *atualizacao_objeto, t_objeto * rochas, t_objeto *diamantes, int *delay_morte) {
 
     //Apliquei um delay para a atualização dos objetos do mapa, senão fica muito rapido
     //Só atualiza a cada 10 ALLEGRO_EVENT_TIMER
     //Se chegar o tempo de atualizar, aplica o deslizamento
     if (*atualizacao_objeto == ATUALIZACAO_OBJETO) {
-        deslizamento (rochas, diamantes, *delay_morte);
+        deslizamento (arq, rochas, diamantes, *delay_morte);
         *atualizacao_objeto = 0;
     }
 
@@ -973,8 +991,27 @@ void anima_explosao (int *sprite_explosao, int *delay_morte) {
     }
     
 }
+
+//Trata do tempo do jogo, não é uma função perfeita, mas funciona razoavelmente bem
+void trata_tempo (int *delay_tempo, int ajuda) {
+
+    if (*delay_tempo % TEMPORIZADOR == 0) {
+        if (ajuda) {
+            tempo = tempo;
+        }
+        else
+            tempo = tempo - 1;
+        *delay_tempo = 0;
+    }
+    if (tempo == 0) {
+        al_play_sample (sample_explosion, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
+        morreu = 1;
+    }
+
+}
+
 //Estado que controla os acontecimentos do jogo
-void estado_jogando (t_player player, t_objeto * rochas, t_objeto* diamantes, int largura_mapa, int altura_mapa, unsigned char * key, ALLEGRO_EVENT *evento) {
+void estado_jogando (FILE *arq, t_player player, t_objeto * rochas, t_objeto* diamantes, int largura_mapa, int altura_mapa, unsigned char * key, ALLEGRO_EVENT *evento) {
 
     int desenha = 0;
     int ajuda = 0;
@@ -989,13 +1026,17 @@ void estado_jogando (t_player player, t_objeto * rochas, t_objeto* diamantes, in
     delay.evento_morte = 0;
     delay.animacao_player = 0;
     delay.animacao_diamante = 0;
+    delay.tempo = 0;
 
     while (estado_jogo == JOGANDO) {
         al_wait_for_event (fila, evento);
-
+    
         switch (evento->type) {
 
             case ALLEGRO_EVENT_TIMER:
+
+                trata_tempo (&delay.tempo, ajuda);
+                delay.tempo++;
 
                 //Se o jogador apertou a tecla 'H', vai para o estado_ajuda 
                 if (ajuda) {
@@ -1014,7 +1055,7 @@ void estado_jogando (t_player player, t_objeto * rochas, t_objeto* diamantes, in
                 pontuacao (&flag_diamante);
 
                 //Atualiza os objetos do mapa e testa para ver se o jogador morreu
-                atualiza_objetos_mapa (&delay.atualizacao_objeto, rochas, diamantes, &delay.evento_morte);
+                atualiza_objetos_mapa (arq, &delay.atualizacao_objeto, rochas, diamantes, &delay.evento_morte);
                 delay.atualizacao_objeto = delay.atualizacao_objeto + 1;                
                 delay.evento_morte = delay.evento_morte + 1;
 
@@ -1033,7 +1074,7 @@ void estado_jogando (t_player player, t_objeto * rochas, t_objeto* diamantes, in
             //Caso um tecla seja apertada, interpreta a ação dessa tecla
             //Também testa as colisões do jogador com o mapa, porém não ve se ele morreu
             case ALLEGRO_EVENT_KEY_CHAR :
-                ajuda = controle (diamantes, rochas, evento, delay.atualizacao_objeto, &player.coord_x, &player.coord_y, &player.direcao, &flag_diamante);
+                ajuda = controle (arq, diamantes, rochas, evento, delay.atualizacao_objeto, &player.coord_x, &player.coord_y, &player.direcao, &flag_diamante);
                 break;
 
             //Caso o jogador feche o display, termina o jogo
@@ -1127,6 +1168,7 @@ void estado_gameover (ALLEGRO_EVENT* evento, unsigned char *key) {
                 else if (key[ALLEGRO_KEY_ESCAPE])               //Teste para ver se o jogador quer sair do jogo
                     estado_jogo = TERMINOU;
 
+
                 //Bloco: Printa a mensagem do fim de jogo
                 disp_pre_draw ();
                 desenha_gameover ();
@@ -1168,8 +1210,21 @@ void destroi_tudo () {
     al_destroy_event_queue (fila);                              //Destrói a fila de eventos
 }
 
+//Pega o último score do arquivo
+void pega_ultimo_score (FILE *arq) {
+
+    fscanf (arq, "%d", &score);
+    while (1) {
+        if (feof (arq)){
+            break;
+        }
+        fscanf (arq, "%d", &score);
+    }
+
+}
 int main () {
 
+    FILE *arq;
     t_objeto *diamantes;
     t_objeto *rochas;
     t_player player;
@@ -1178,6 +1233,11 @@ int main () {
     unsigned char key[ALLEGRO_KEY_MAX];
 
     //Inicializa todas a varíaveis usadas no jogo
+    arq = fopen ("./resources/score.txt", "a+");
+    if (!arq){
+        perror ("Não foi possível inicializar o arquivo score.txt");
+        exit (1);
+    }
     inicializa_variaveis (&largura_mapa, &altura_mapa, &player);
     rochas = aloca_vetor_objeto (N_ROCHAS);                         //Aloca espaço na memória para um vetor t_objeto que cuidadará das rochas do mapa
     diamantes = aloca_vetor_objeto (N_DIAMANTES);                   //Aloca espaço na memória para um vetor t_objeto que cuidadará dos diamantes do mapa
@@ -1190,6 +1250,8 @@ int main () {
     al_register_event_source (fila, al_get_keyboard_event_source());
     al_register_event_source (fila, al_get_display_event_source(display));
     al_register_event_source (fila, al_get_timer_event_source(timer));
+
+    pega_ultimo_score (arq);
 
     //inicia o contador
     al_start_timer (timer);
@@ -1205,7 +1267,7 @@ int main () {
         //Escolhe uma função de acordo com o estado do jogo
         switch (estado_jogo) {
             case MENU        : estado_menu      (key, &evento); break;
-            case JOGANDO     : estado_jogando   (player, rochas, diamantes, largura_mapa, altura_mapa, key, &evento); break;
+            case JOGANDO     : estado_jogando   (arq, player, rochas, diamantes, largura_mapa, altura_mapa, key, &evento); break;
             case FIMDAPARTIDA: estado_standby   (&evento, key); break;
             case GAMEOVER    : estado_gameover  (&evento, key); break;
             default: break;
@@ -1214,6 +1276,7 @@ int main () {
     //Desaloca os t_objeto* 
     free (diamantes);
     free (rochas);
+    fclose (arq);
     return 0;
 
 }
