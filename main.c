@@ -1273,7 +1273,8 @@ int main () {
             default: break;
         }
     }
-    //Desaloca os t_objeto* 
+    //Desaloca os t_objeto*
+    destroi_tudo ();
     free (diamantes);
     free (rochas);
     fclose (arq);
