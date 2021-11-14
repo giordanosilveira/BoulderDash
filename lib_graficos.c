@@ -2,7 +2,6 @@
 #include "libDefines.h" 
 #include "lib_graficos.h"
 
-
 //Desenha no buffer bitmap
 void disp_pre_draw () {
     al_set_target_bitmap (buffer);

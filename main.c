@@ -3,6 +3,7 @@
 
 #include "libDefines.h"
 
+#include "lib_init_dest.h"
 #include "lib_geral.h"
 #include "lib_graficos.h"
 #include "lib_move.h"
