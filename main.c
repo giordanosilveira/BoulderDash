@@ -3,8 +3,9 @@
 
 #include "libDefines.h"
 
-#include "lib_macro.h"
-#include "lib_micro.h"
+#include "lib_geral.h"
+#include "lib_graficos.h"
+#include "lib_move.h"
 
 #include <allegro5/allegro5.h>
 #include <allegro5/allegro_font.h>
