@@ -16,7 +16,7 @@ lib_move.o: lib_move.c lib_move.h libDefines.h
 	gcc -Wall -g -c lib_move.c $(LDFLAGS)
 
 lib_geral.o: lib_geral.c lib_geral.h lib_graficos.c lib_graficos.h lib_move.c lib_move.h libDefines.h
-	gcc -Wall -g -c lib_geral.c
+	gcc -Wall -g -c lib_geral.c $(LDFLAGS)
 
 clean:
 	-rm -f *~ *.o
