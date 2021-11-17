@@ -25,13 +25,13 @@ ALLEGRO_EVENT_QUEUE *fila;                                  //fila de eventos
 ALLEGRO_DISPLAY *display;                                   //Tela do jogo
 ALLEGRO_BITMAP *buffer;                                     //Bitmap para um pré print dos itens do jogo
 ALLEGRO_FONT *font;                                         //fonte de texto
-ALLEGRO_SAMPLE *sample_coin;
-ALLEGRO_SAMPLE *sample_explosion;
-ALLEGRO_SAMPLE *sample_select;
+ALLEGRO_SAMPLE *sample_coin;                                //Sample que toca quando o jogador pega uma moeda
+ALLEGRO_SAMPLE *sample_explosion;                           //Sample que toca quando o jogador morre
+ALLEGRO_SAMPLE *sample_select;      
 
-int morreu;
+int morreu;                                                 //Variável que verifca se o jogador morreu
 
-int tempo;
+int tempo;                                                  //Variável que controla o tempo do jogo
 int score;                                                  //última pontuação do jogador
 int pontos;                                                 //Pontuação do jogador
 int contador_diamantes;                                     //contador de diamantes
@@ -48,12 +48,14 @@ int main () {
     int largura_mapa, altura_mapa;
     unsigned char key[ALLEGRO_KEY_MAX];
 
-    //Inicializa todas a varíaveis usadas no jogo
+    //Abre o arquivo score e testa para ver se ele abriu corretamente
     arq = fopen ("./resources/score.txt", "a+");
     if (!arq){
         perror ("Não foi possível inicializar o arquivo score.txt");
         exit (1);
     }
+
+    //Inicializa todas a varíaveis usadas no jogo
     inicializa_variaveis (&largura_mapa, &altura_mapa, &player);
     rochas = aloca_vetor_objeto (N_ROCHAS);                         //Aloca espaço na memória para um vetor t_objeto que cuidadará das rochas do mapa
     diamantes = aloca_vetor_objeto (N_DIAMANTES);                   //Aloca espaço na memória para um vetor t_objeto que cuidadará dos diamantes do mapa
@@ -67,16 +69,13 @@ int main () {
     al_register_event_source (fila, al_get_display_event_source(display));
     al_register_event_source (fila, al_get_timer_event_source(timer));
 
-    pega_ultimo_score (arq);
+    pega_ultimo_score (arq);                                        //Pega o último melhor score do jogador
 
-    //inicia o contador
-    al_start_timer (timer);
-    
-    //inicializa as posições do vetor key com 0 
-    memset (key, 0, ALLEGRO_KEY_MAX * sizeof(unsigned char));
+    al_start_timer (timer);                                         //inicia o contador
+     
+    memset (key, 0, ALLEGRO_KEY_MAX * sizeof(unsigned char));       //inicializa as posições do vetor key com 0       
 
-    //Inicia o jogo com o estado menu
-    estado_jogo = MENU;
+    estado_jogo = MENU;                                             //Inicia o jogo com o estado menu
 
     //Continua nesse laço enquanto o jogo não terminou
     while (estado_jogo != TERMINOU) {

@@ -1,7 +1,6 @@
 #include "libDefines.h"
 #include "lib_move.h"
 
-//Função que testa a colisão do jogador com os objetos e toma as ações necessárias dependendo de onde o jogador bateu
 void colisao (FILE*arq, t_objeto* diamantes, t_objeto * rochas, int delay_pedra, int direcao, int *coord_p_x, int *coord_p_y, int *anterior_coord_p_x, int *anterior_coord_p_y, bool *flag_dimas) {
 
     //Se o jogador bateu na parede, permanece na mesma posição
@@ -56,14 +55,15 @@ void colisao (FILE*arq, t_objeto* diamantes, t_objeto * rochas, int delay_pedra,
 
 }
 
-//Função que interpreta as teclas que o jogador aperta
 int controle (FILE *arq, t_objeto* diamantes, t_objeto* rochas, ALLEGRO_EVENT *evento, int delay_pedra, int *coord_p_x, int *coord_p_y, int *direcao, bool* flag_dimas) {
 
-    int ajuda = 0;
+
+    int ajuda = 0;                                                  //Variável que controla se o jogador pediu ajuda
+    
+    //Variável para guardar o posição anterior do jogador; necessária caso o jogador fique na mesma posição
     int anterior_coord_p_x, anterior_coord_p_y;
     anterior_coord_p_x = *coord_p_x;
     anterior_coord_p_y = *coord_p_y;
-    
     
     //Cláusula para o jogador não mexer o player quando ele morre 
     if (! morreu) {
@@ -102,9 +102,6 @@ int controle (FILE *arq, t_objeto* diamantes, t_objeto* rochas, ALLEGRO_EVENT *e
 
 }
 
-//Função que move as pedras e os diamante conforme as regras do jogo
-//Os itens ou vão para baixo, ou se movem em L caso o item de baixo seja uma pedra
-//É uma atualização por x ALLEGRO_EVENT_TIMER
 void gravidade (t_objeto *secundario, t_objeto *primario, int tam_sec, int tam_pri, int *coord_x_obj, int *coord_y_obj, bool *movimentando) {
 
     //Se o item abaixo for uma terra, não acontece nada
@@ -175,7 +172,6 @@ void gravidade (t_objeto *secundario, t_objeto *primario, int tam_sec, int tam_p
     }
 }
 
-//Função que trata da atualização dos objetos
 void deslizamento (FILE*arq, t_objeto * rochas, t_objeto *diamantes, int frames_evento_morte) {
 
     for (int i = 0; i < N_ROCHAS; i++) {
@@ -187,7 +183,7 @@ void deslizamento (FILE*arq, t_objeto * rochas, t_objeto *diamantes, int frames_
         //Apliquei um delay para a morte do jogador não ficar instantânea
         if (frames_evento_morte == DELAY_MORTE_JOGADOR)
 
-            //Se o jogador morreu, toca o sample explosão e o jogo termina
+            //Se o jogador morreu, toca o sample explosão, escreve o score no arquivo e o jogo termina
             if ((mapa[rochas[i].coord_x + 1][rochas[i].coord_y].item == PLAYER) && (rochas[i].movimentando == true)) {
                 al_play_sample (sample_explosion, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
                 if (pontos + tempo > score) {
@@ -205,7 +201,7 @@ void deslizamento (FILE*arq, t_objeto * rochas, t_objeto *diamantes, int frames_
         //Apliquei um delay para a morte do jogador não ficar instantânea
         if (frames_evento_morte == DELAY_MORTE_JOGADOR)
 
-            //Se o jogador morreu, toca o sample explosão e o jogo termina 
+            //Se o jogador morreu, toca o sample explosão, escreve o score no arquivo e o jogo termina 
             if ((mapa[diamantes[i].coord_x + 1][diamantes[i].coord_y].item == PLAYER) && (diamantes[i].movimentando == true)) {
                 al_play_sample (sample_explosion, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
                 if (pontos + tempo > score) {
@@ -216,7 +212,6 @@ void deslizamento (FILE*arq, t_objeto * rochas, t_objeto *diamantes, int frames_
     } 
 }
 
-//Função responsável para atualizar os objetos do mapa
 void atualiza_objetos_mapa (FILE *arq, int *atualizacao_objeto, t_objeto * rochas, t_objeto *diamantes, int *delay_morte) {
 
     //Apliquei um delay para a atualização dos objetos do mapa, senão fica muito rapido

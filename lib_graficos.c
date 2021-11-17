@@ -2,13 +2,10 @@
 #include "libDefines.h" 
 #include "lib_graficos.h"
 
-//Desenha no buffer bitmap
 void disp_pre_draw () {
     al_set_target_bitmap (buffer);
 }
 
-//Desenha no display
-//Estica o buffer
 void disp_post_draw () {
     al_set_target_backbuffer (display);
 
@@ -18,9 +15,9 @@ void disp_post_draw () {
     al_flip_display ();
 }
 
-//Função que printa o mapa
 void desenha_mapa (t_objeto *rochas, t_objeto * diamante, int largura, int altura, t_player * player, int sprite_diamante, int sprite_explosao) {
 
+    //Variável que auxiliam para printar o sprite correto do player
     int aux_ani_dir = 14;
     int aux_ani_esq = 7;
 
@@ -73,7 +70,6 @@ void desenha_mapa (t_objeto *rochas, t_objeto * diamante, int largura, int altur
     }
 }
 
-//Desenha a pontução e o progresso do jogador
 void desenha_hud () {
     al_draw_textf (font, al_map_rgb(255, 255, 0), 10, 7, 0, "%d", diamante_minimos);
     al_draw_bitmap (sheet.diamante[0], 26, 3 ,0);
@@ -144,25 +140,25 @@ void desenha_ajuda (int easter_egg, int delay_animacao, int *sprite_animacao, bo
 
 }
 
-//Desenha as mensagens do estado stand by
 void desenha_standby () {
 
     al_clear_to_color (al_map_rgb(0, 0, 0));
+    
+    //Escreve as mensagens
     al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2, ALLEGRO_ALIGN_CENTER, "Parabens você venceu :)");
     al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2 + 10, ALLEGRO_ALIGN_CENTER, "Aperte 'ENTER' ou 'ESC' para sair" );
 
 }
 
-//Desenha as mensagens do estado game over
 void desenha_gameover () {
 
     al_clear_to_color (al_map_rgb(0, 0, 0));
+    //Escreve as mensagens
     al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2, ALLEGRO_ALIGN_CENTER, "Você perdeu! QUE PENA:'( ");
     al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2 + 10, ALLEGRO_ALIGN_CENTER, "Aperte 'ENTER' ou 'ESC' para sair" );
 
 }
 
-//Função feita para animar o player
 void anima_jogador (bool * flag_ida, int *delay_animacao, t_player *player) {
 
     //Se as animações do player estão crescendo
@@ -190,7 +186,6 @@ void anima_jogador (bool * flag_ida, int *delay_animacao, t_player *player) {
 
 }
 
-//Função feita para trocar as sprites dos diamantes 
 void anima_diamantes (int *delay_animacao, int *sprite_diamante) {
     
     //Apliquei um delay para a animção não ficar rápida demais
@@ -207,7 +202,6 @@ void anima_diamantes (int *delay_animacao, int *sprite_diamante) {
 
 }
 
-//Função que anima as explosões
 void anima_explosao (int *sprite_explosao, int *delay_morte) {
 
     //se der o tempo necessário para mudar a animação da explosão, troca o sprite da explosão

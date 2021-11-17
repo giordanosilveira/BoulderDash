@@ -17,8 +17,8 @@
 #define DELAY_ANIMACAO 84                                   //Delay para a troca de sprites do jogador
 #define DELAY_ANIMACAO_DIAMANTE 160                         //Delay para a troca de sprites dos diamantes
 #define DELAY_EASTER_EGG 1500                               //Tempo para aparecer o easter egg
-#define TEMPORIZADOR 60
-#define TEMPO_TOTAL 120
+#define TEMPORIZADOR 60                                     //Responsavel pelo tempo do jogo
+#define TEMPO_TOTAL 120                                     //Tempo que o jogador tem para passar de fase 
 
 #define MULT_DISPLAY 2                                      //Número para multiplicar o buffer para preencher formar o display
 #define CORRECAO_DISPLAY 23                                 //Para deixar uma sobra no display para a HUD

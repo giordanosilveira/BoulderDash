@@ -32,7 +32,7 @@ void localiza_explosao (t_objeto*rochas, t_objeto *diamantes, t_player player) {
 
     //Percorre todas as pedras e, se achar uma pedra que está logo entorno do jogador, destroi ela
     for (int i = 0; i < N_ROCHAS; i++) {
-        //If's gigantescos que basicamente testam se acham uma rocha entorno do jogador, um quadrado de 3x3
+        //If's gigantescos que basicamente testam se achamram uma rocha entorno do jogador, um quadrado de 3x3
         if (((rochas[i].coord_x == player.coord_x) && (rochas[i].coord_y == player.coord_y + DIREITA)) || ((rochas[i].coord_x == player.coord_x) && (rochas[i].coord_y == player.coord_y + ESQUERDA)))
             rochas[i].morto = true;
         
@@ -48,7 +48,7 @@ void localiza_explosao (t_objeto*rochas, t_objeto *diamantes, t_player player) {
 
     //Percorre todos os diamantes e, se achar um diamante que está logo entorno do jogador, destroi ele
     for (int i = 0; i < N_DIAMANTES; i++) {
-        //If's gigantescos que basicamente testam se acham um diamante entorno do jogador, um quadrado de 3x3
+        //If's gigantescos que basicamente testam se acharam um diamante entorno do jogador; um quadrado de 3x3
         if (((diamantes[i].coord_x == player.coord_x) && (diamantes[i].coord_y == player.coord_y + DIREITA)) || ((diamantes[i].coord_x == player.coord_x) && (diamantes[i].coord_y == player.coord_y + ESQUERDA)))
             diamantes[i].morto = true;
         
@@ -61,7 +61,7 @@ void localiza_explosao (t_objeto*rochas, t_objeto *diamantes, t_player player) {
             diamantes[i].morto = true;
     }
 
-    //Destroi o mapa logo ao entorno do jogador, um quadrado de 3x3
+    //Destroi o mapa no entorno do jogador; um quadrado de 3x3
     mapa[player.coord_x][player.coord_y].item = EXPLODIDO;
     mapa[player.coord_x][player.coord_y + DIREITA].item = EXPLODIDO;
     mapa[player.coord_x][player.coord_y + ESQUERDA].item = EXPLODIDO;
@@ -75,15 +75,19 @@ void localiza_explosao (t_objeto*rochas, t_objeto *diamantes, t_player player) {
 }
 
 void trata_tempo (int *delay_tempo, int ajuda) {
+    /*Como o jogo atualiza a 60fps, ou seja, 60 frames por segundo, a cada 60 ALLEGRO_TIMER_EVENTE eu diminuo um da variável tempo.
+    Não se passa um segundo perfeitamente, mas é uma aproximação muito boa*/
 
+    //Testa para ver se a variável tempo chegou no seu máximo 
     if (*delay_tempo % TEMPORIZADOR == 0) {
-        if (ajuda) {
+        if (ajuda) {                                            //Caso o jogador esteja no estado ajuda, o tempo não diminui. Uma espécia de pause
             tempo = tempo;
         }
-        else
+        else                                                    //Diminui um segundo do tempo total
             tempo = tempo - 1;
         *delay_tempo = 0;
     }
+    //Caso o tempo chegue ao fim, o jogador morre
     if (tempo == 0) {
         al_play_sample (sample_explosion, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
         morreu = 1;
@@ -94,8 +98,9 @@ void trata_tempo (int *delay_tempo, int ajuda) {
 void pega_ultimo_score (FILE *arq) {
 
     fscanf (arq, "%d", &score);
+    //Percorre o arquivo e vai pegando as pontuações até a última
     while (1) {
-        if (feof (arq)){
+        if (feof (arq)){                            //Testa para ver se chegou ao final do arquivo
             break;
         }
         fscanf (arq, "%d", &score);
@@ -139,12 +144,15 @@ void estado_menu (unsigned char *key, ALLEGRO_EVENT *evento) {
 void estado_ajuda (unsigned char *key, ALLEGRO_EVENT* evento) {
 
     int close = 0;
-    int easter_egg = 0;
+    int easter_egg = 0;                                             //Variável que controla a aparição do easter egg
     int delay_animacao = 0;
     int sprite_animacao = 0;
     bool ida = true;
 
+    //Reinicializa com 0 a variável key
     memset (key, 0, ALLEGRO_KEY_MAX * sizeof(unsigned char));
+    
+    //Enquanto não fechou o menu ajuda
     while (! close) {
         al_wait_for_event (fila, evento);
         switch (evento->type)
@@ -191,14 +199,14 @@ void estado_ajuda (unsigned char *key, ALLEGRO_EVENT* evento) {
 
 void estado_jogando (FILE *arq, t_player player, t_objeto * rochas, t_objeto* diamantes, int largura_mapa, int altura_mapa, unsigned char * key, ALLEGRO_EVENT *evento) {
 
-    int desenha = 0;
-    int ajuda = 0;
-    int sprite_diamante = 0;
-    int sprite_explosao = 0;
+    int desenha = 0;                                        //Variável que controla se é possível desenhar
+    int ajuda = 0;                                          //Variável que controla se a ajuda foi pedida    
+    int sprite_diamante = 0;                                //Variável que auxilia na animação dos diamantes
+    int sprite_explosao = 0;                                //Variável que auxilia na animação da explosão
     bool ida = true;
     bool flag_diamante = false;
 
-    t_contaFrames delay;
+    t_contaFrames delay;                                    
 
     delay.atualizacao_objeto = 0;
     delay.evento_morte = 0;
@@ -267,21 +275,24 @@ void estado_jogando (FILE *arq, t_player player, t_objeto * rochas, t_objeto* di
                 break;
 
         }
+        //Se pode desenhar e não tem nenhuma outra pendência na fila de eventos, desenha o jogo
         if ((desenha) && (al_is_event_queue_empty(fila))) {
             disp_pre_draw ();
-            al_clear_to_color (al_map_rgb(0,0,0));
+            al_clear_to_color (al_map_rgb(0,0,0));                      //Fundo preto
             desenha_hud ();
             desenha_mapa (rochas, diamantes, largura_mapa, altura_mapa, &player, sprite_diamante, sprite_explosao);
             disp_post_draw ();
-            desenha = 0;
+            desenha = 0;                                         
         }
     }
 }
 
 void estado_standby (ALLEGRO_EVENT* evento, unsigned char *key) {
 
+    //Reinicializa com 0 a variável key
     memset (key, 0, ALLEGRO_KEY_MAX * sizeof(unsigned char));
 
+    //Enquanto está no estado standby
     while (estado_jogo == FIMDAPARTIDA) {
         al_wait_for_event (fila, evento);
 
@@ -319,7 +330,9 @@ void estado_standby (ALLEGRO_EVENT* evento, unsigned char *key) {
 
 void estado_gameover (ALLEGRO_EVENT* evento, unsigned char *key) {
     
+    //Reinicializa com 0 a variável key
     memset (key, 0, ALLEGRO_KEY_MAX * sizeof(unsigned char));
+    
     while (estado_jogo == GAMEOVER) {
         
         al_wait_for_event (fila, evento);

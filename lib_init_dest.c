@@ -1,8 +1,6 @@
 #include "libDefines.h"
 #include "lib_init_dest.h"
 
-//Função que aloca um matriz do tipo mapa
-//Retorno o ponteiro da matriz
 t_mapa ** aloca_matriz_mapa (int largura, int altura) {
 
     t_mapa **matriz;
@@ -32,8 +30,6 @@ t_mapa ** aloca_matriz_mapa (int largura, int altura) {
 
 }
 
-//Função que aloca um vetor do tipo objeto
-//Retorno o ponteiro da vetor
 t_objeto *aloca_vetor_objeto (int tam_vetor) {
 
     t_objeto *vetor;
@@ -49,7 +45,6 @@ t_objeto *aloca_vetor_objeto (int tam_vetor) {
 
 }
 
-//Função que testa se uma variável ALLEGRO foi alocada
 void testa_inicializacao (bool test, const char *descricao) {
 
     //Teste para ver se inicializou corretamente
@@ -62,7 +57,6 @@ void testa_inicializacao (bool test, const char *descricao) {
 
 }
 
-//Função que carrega o mapa de uma arquivo para a memória
 void carrega_mapa (int *largura, int *altura) {
     
     FILE *arquivo;
@@ -93,8 +87,6 @@ void carrega_mapa (int *largura, int *altura) {
 
 }
 
-//Função que pega uma sub-bitmap de uma bitmap maior, é passada as coordenadas da sub-bitmap e as dimensões dela
-//É retornada a sub-bitmap 
 ALLEGRO_BITMAP* sprite_grab(int coord_x_inicial, int coord_y_inicial, int largura_sprite, int altura_sprite) {
     
     //Seleciona uma sub-sprite da imagem grande
@@ -106,7 +98,6 @@ ALLEGRO_BITMAP* sprite_grab(int coord_x_inicial, int coord_y_inicial, int largur
     
 }
 
-//Carrega as sprites de uma arquivo para a memória
 void inicializa_sprites () {
 
     //Carrega a imagem principal 
@@ -167,7 +158,6 @@ void inicializa_sprites () {
 
 }
 
-//Destrói todas as sprites do jogo
 void destruindo_sprites () {
 
     //Desaloca a bitmap principal    
@@ -192,7 +182,6 @@ void destruindo_sprites () {
 
 }
 
-//Função que inicializa o tipo objeto
 void inicializa_vetor_objetos (t_objeto *vetor, int largura_mapa, int altura_mapa, int ITEM) {
 
     
@@ -279,6 +268,7 @@ void inicializa_variaveis ( int *largura_mapa, int *altura_mapa, t_player *playe
     contador_diamantes = 0;
     diamante_minimos = DIAMANTES_MINIMOS_F1;
     pontuacao_minima = diamante_minimos;
+    
 }
 
 void destroi_tudo () {
