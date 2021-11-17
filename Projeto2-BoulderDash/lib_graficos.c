@@ -28,7 +28,7 @@ void desenha_mapa (int largura, int altura, t_player * player, int sprite_diaman
             switch (mapa[i][j].item) {
 
                 case PAREDE:    //Se for o bloco parede                           
-                    al_draw_bitmap (sheet.mapa[0], j*LARGURA_BITMAP_BLOCO, i*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
+                    al_draw_tinted_bitmap (sheet.mapa[0], al_map_rgba_f (192, 192, 192, 0.5), j*LARGURA_BITMAP_BLOCO, i*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
                     break;
                 case TIJOLO:    //Se for o bloco tijolo
                     al_draw_bitmap (sheet.mapa[2], j*LARGURA_BITMAP_BLOCO, i*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
@@ -61,7 +61,7 @@ void desenha_mapa (int largura, int altura, t_player * player, int sprite_diaman
     //Percorre o vetor de rochas e printa elas caso não estejam mortas
     for (int i = 0; i < N_ROCHAS; i++){
         if (rochas[i].morto == false)
-            al_draw_bitmap (sheet.mapa[5], rochas[i].coord_y*LARGURA_BITMAP_BLOCO, rochas[i].coord_x*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
+            al_draw_tinted_bitmap (sheet.mapa[5], al_map_rgba_f (192,192,192, 10.0), rochas[i].coord_y*LARGURA_BITMAP_BLOCO, rochas[i].coord_x*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
     }
     //Percorre o vetor de diamante e printa eles caso não estejam mortos
     for (int i = 0; i < N_DIAMANTES; i++){

@@ -111,8 +111,8 @@ void gravidade (t_objeto *secundario, t_objeto *primario, int tam_sec, int tam_p
     if (mapa[*coord_x_obj + 1][*coord_y_obj].item == NADA) {
         *movimentando = true;
         *coord_x_obj = *coord_x_obj + BAIXO;
-        mapa[*coord_x_obj][*coord_y_obj].item = VAGO;
-        mapa[*coord_x_obj - 1][*coord_y_obj].item = NADA;
+        mapa[*coord_x_obj][*coord_y_obj].item = VAGO;                                           //Atualiza a matriz mapa 
+        mapa[*coord_x_obj - 1][*coord_y_obj].item = NADA;                                       //Posição anterior recebe NADA
         return;
     }
 

@@ -15,6 +15,7 @@
 #include <allegro5/allegro_acodec.h>
 #include <allegro5/allegro_audio.h>
 
+/*--------------------------------------------------------------------Declaração das variáveis--------------------------------------------------------------------------------*/
 enum estados_t estado_jogo;
 
 t_objeto *rochas;
@@ -39,6 +40,10 @@ int pontos;                                                 //Pontuação do jog
 int contador_diamantes;                                     //contador de diamantes
 int diamante_minimos;                                       //Diamantes mínimos necessários para mudar a pontuação
 int pontuacao_minima;                                       //Pontução que o jogador recebe a cada diamante
+
+
+/*----------------------------------------------------------------------------------Função main--------------------------------------------------------------------------------*/
+
 
 int main () {
 

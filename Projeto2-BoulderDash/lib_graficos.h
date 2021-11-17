@@ -5,7 +5,7 @@
 void disp_pre_draw ();
 
 //Desenha no display
-//Estica o buffer
+//Estica o buffer para caber na tela principal 
 void disp_post_draw ();
 
 //Função que printa o mapa

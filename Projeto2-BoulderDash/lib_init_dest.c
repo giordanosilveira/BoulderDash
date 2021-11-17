@@ -242,24 +242,24 @@ void inicializa_vetor_objetos (t_objeto *vetor, int largura_mapa, int altura_map
 void inicializa_variaveis ( int *largura_mapa, int *altura_mapa, t_player *player) {
 
 
-    testa_inicializacao (al_init (), "a biblioteca allegro :(");        //Instala a biblioteca allegro e testa para ver se abriu direito
-    testa_inicializacao (al_install_keyboard (), "o teclado :(");       //Instala a teclado e testa para ver se alocou
+    testa_inicializacao (al_init (), "a biblioteca allegro");        //Instala a biblioteca allegro e testa para ver se abriu direito
+    testa_inicializacao (al_install_keyboard (), "o teclado");       //Instala a teclado e testa para ver se alocou
     testa_inicializacao (al_init_primitives_addon (), "as primitives"); //Instala a biblioteca resposável para as funções primitives 
     
     timer = al_create_timer (1.0/FPS);                                  //Cria o temporizador e testa para ver se alocou
-    testa_inicializacao (timer, "o temporizador :(");
+    testa_inicializacao (timer, "o temporizador ");
 
     fila = al_create_event_queue ();                                    //cria a fila de eventos e testa para ver se alocou
-    testa_inicializacao (fila, "a fila de eventos :(");
+    testa_inicializacao (fila, "a fila de eventos ");
 
     display = al_create_display (LARGURA_DISPLAY, ALTURA_DISPLAY);      //Cria o display e testa para ver se alocou
-    testa_inicializacao (display, "o display :(");
+    testa_inicializacao (display, "o display ");
 
     buffer = al_create_bitmap (LARGURA_BUFFER, ALTURA_BUFFER);          //Cria o bitmap buffer e testa para ver se alocou
-    testa_inicializacao (buffer, "o bitmap buffer :(");
+    testa_inicializacao (buffer, "o bitmap buffer ");
 
     font = al_create_builtin_font ();                                   //Cria a fonte de texto e testa para ver se alocou
-    testa_inicializacao (font, "a fonte :(");
+    testa_inicializacao (font, "a fonte ");
 
     testa_inicializacao (al_init_image_addon(), "imagem addon");        //Inicia o imagem addon e testa para ver se inicializou
     inicializa_sprites ();                                              //Carrega as sprites do jogo na memória
