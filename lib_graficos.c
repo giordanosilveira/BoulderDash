@@ -83,7 +83,8 @@ void desenha_menu () {
     
     //Fundo preto e desenha as mensagens
     al_clear_to_color (al_map_rgb(0, 0, 0));
-    al_draw_filled_rectangle (0, 0, LARGURA_BUFFER, ALTURA_BUFFER/2, al_map_rgb (30, 144, 255));
+    al_draw_filled_rectangle (0, 0, LARGURA_BUFFER, ALTURA_BUFFER/2, al_map_rgb (255, 255, 255));
+    al_draw_filled_rectangle (10, 10, LARGURA_BUFFER - 10, ALTURA_BUFFER/2 - 10, al_map_rgb (30, 144, 255));
     al_draw_textf (font, al_map_rgb (0, 0, 0), LARGURA_BUFFER/2, (ALTURA_BUFFER/2)/2, ALLEGRO_ALIGN_CENTER, "BOULDER");
     al_draw_textf (font, al_map_rgb (0, 0, 0), LARGURA_BUFFER/2, (ALTURA_BUFFER/2)/2 + 10, ALLEGRO_ALIGN_CENTER, "DASH");
     al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2 + 100, ALLEGRO_ALIGN_CENTER, "APERTE 'ENTER' PARA INICIAR");

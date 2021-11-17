@@ -79,6 +79,7 @@ void testa_inicializacao (bool test, const char *descricao) {
         return;
 
     //Caso não tenha inicializado, printa a mensagem e sai do programa
+    perror ("Error:");
     fprintf (stderr, "Não foi possível inicializar %s\n", descricao);
     exit (1);
 
