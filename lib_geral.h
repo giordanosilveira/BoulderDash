@@ -5,7 +5,7 @@
 void pontuacao (bool *);
 
 //Função que destroi todo o entorno do jogador
-void localiza_explosao (t_objeto*, t_objeto *, t_player );
+void localiza_explosao (t_player );
 
 //Trata do tempo do jogo, não é uma função perfeita, mas funciona razoavelmente bem
 void trata_tempo (int *, int );
@@ -20,10 +20,10 @@ void estado_menu (unsigned char *, ALLEGRO_EVENT *);
 void estado_ajuda (unsigned char *, ALLEGRO_EVENT* );
 
 //Estado que controla os acontecimentos do jogo
-void estado_jogando (FILE *, t_player , t_objeto * , t_objeto* , int , int , unsigned char * , ALLEGRO_EVENT *);
+void estado_jogando (FILE *, t_player , int , int , unsigned char * , ALLEGRO_EVENT *);
 
 //Função que cuida do estado stand by
-void estado_standby (ALLEGRO_EVENT* , unsigned char *);
+void estado_standby (t_player *, ALLEGRO_EVENT* , unsigned char *);
 
 //Função que cuida do estado game over
 void estado_gameover (ALLEGRO_EVENT* , unsigned char *);

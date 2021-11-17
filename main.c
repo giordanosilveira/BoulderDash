@@ -17,6 +17,8 @@
 
 enum estados_t estado_jogo;
 
+t_objeto *rochas;
+t_objeto *diamantes;
 t_sprites sheet;                                            //Sprites de todos os itens do mapa
 t_mapa **mapa;                                              //Matriz do mapa
 
@@ -27,7 +29,7 @@ ALLEGRO_BITMAP *buffer;                                     //Bitmap para um pr�
 ALLEGRO_FONT *font;                                         //fonte de texto
 ALLEGRO_SAMPLE *sample_coin;                                //Sample que toca quando o jogador pega uma moeda
 ALLEGRO_SAMPLE *sample_explosion;                           //Sample que toca quando o jogador morre
-ALLEGRO_SAMPLE *sample_select;      
+ALLEGRO_SAMPLE *sample_pause;      
 
 int morreu;                                                 //Variável que verifca se o jogador morreu
 
@@ -36,13 +38,11 @@ int score;                                                  //última pontuaçã
 int pontos;                                                 //Pontuação do jogador
 int contador_diamantes;                                     //contador de diamantes
 int diamante_minimos;                                       //Diamantes mínimos necessários para mudar a pontuação
-int pontuacao_minima;
+int pontuacao_minima;                                       //Pontução que o jogador recebe a cada diamante
 
 int main () {
 
     FILE *arq;
-    t_objeto *diamantes;
-    t_objeto *rochas;
     t_player player;
     ALLEGRO_EVENT evento;
     int largura_mapa, altura_mapa;
@@ -57,8 +57,6 @@ int main () {
 
     //Inicializa todas a varíaveis usadas no jogo
     inicializa_variaveis (&largura_mapa, &altura_mapa, &player);
-    rochas = aloca_vetor_objeto (N_ROCHAS);                         //Aloca espaço na memória para um vetor t_objeto que cuidadará das rochas do mapa
-    diamantes = aloca_vetor_objeto (N_DIAMANTES);                   //Aloca espaço na memória para um vetor t_objeto que cuidadará dos diamantes do mapa
 
     //Inicializa ambas estruturas com as coordenadas iniciais dos 
     inicializa_vetor_objetos (rochas, largura_mapa, altura_mapa, ROCHA);
@@ -82,16 +80,17 @@ int main () {
         //Escolhe uma função de acordo com o estado do jogo
         switch (estado_jogo) {
             case MENU        : estado_menu      (key, &evento); break;
-            case JOGANDO     : estado_jogando   (arq, player, rochas, diamantes, largura_mapa, altura_mapa, key, &evento); break;
-            case FIMDAPARTIDA: estado_standby   (&evento, key); break;
+            case JOGANDO     : estado_jogando   (arq, player, largura_mapa, altura_mapa, key, &evento); break;
+            case FIMDAPARTIDA: estado_standby   (&player,&evento, key); break;
             case GAMEOVER    : estado_gameover  (&evento, key); break;
             default: break;
         }
     }
+    if (pontos + tempo > score) {
+        fprintf (arq, "%d\n", pontos + tempo);
+    }
     //Desaloca os t_objeto*
     destroi_tudo ();
-    free (diamantes);
-    free (rochas);
     fclose (arq);
     return 0;
 

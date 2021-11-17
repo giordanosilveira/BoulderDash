@@ -1,7 +1,7 @@
 #include "libDefines.h"
 #include "lib_move.h"
 
-void colisao (FILE*arq, t_objeto* diamantes, t_objeto * rochas, int delay_pedra, int direcao, int *coord_p_x, int *coord_p_y, int *anterior_coord_p_x, int *anterior_coord_p_y, bool *flag_dimas) {
+void colisao (FILE*arq, int delay_pedra, int direcao, int *coord_p_x, int *coord_p_y, int *anterior_coord_p_x, int *anterior_coord_p_y, bool *flag_dimas) {
 
     //Se o jogador bateu na parede, permanece na mesma posição
     if (mapa[*coord_p_x][*coord_p_y].item == PAREDE) {
@@ -47,15 +47,12 @@ void colisao (FILE*arq, t_objeto* diamantes, t_objeto * rochas, int delay_pedra,
 
     //Se o jogador chegou na porta, ele ganhou
     if (mapa[*coord_p_x][*coord_p_y].item == PORTA) {
-        if (pontos + tempo > score) {
-            fprintf (arq, "%d\n", pontos + tempo);
-        }
         estado_jogo = FIMDAPARTIDA;
     }
 
 }
 
-int controle (FILE *arq, t_objeto* diamantes, t_objeto* rochas, ALLEGRO_EVENT *evento, int delay_pedra, int *coord_p_x, int *coord_p_y, int *direcao, bool* flag_dimas) {
+int controle (FILE *arq, ALLEGRO_EVENT *evento, int delay_pedra, int *coord_p_x, int *coord_p_y, int *direcao, bool* flag_dimas) {
 
 
     int ajuda = 0;                                                  //Variável que controla se o jogador pediu ajuda
@@ -89,7 +86,7 @@ int controle (FILE *arq, t_objeto* diamantes, t_objeto* rochas, ALLEGRO_EVENT *e
             estado_jogo = TERMINOU;
 
         //Depois tratar as teclas, vê aonde o player colidiu toma as ações necessárias
-        colisao (arq, diamantes, rochas, delay_pedra, *direcao, coord_p_x, coord_p_y, &anterior_coord_p_x, &anterior_coord_p_y, flag_dimas);
+        colisao (arq, delay_pedra, *direcao, coord_p_x, coord_p_y, &anterior_coord_p_x, &anterior_coord_p_y, flag_dimas);
         mapa[anterior_coord_p_x][anterior_coord_p_y].item = NADA;
         mapa[*coord_p_x][*coord_p_y].item = PLAYER;
 
@@ -172,7 +169,7 @@ void gravidade (t_objeto *secundario, t_objeto *primario, int tam_sec, int tam_p
     }
 }
 
-void deslizamento (FILE*arq, t_objeto * rochas, t_objeto *diamantes, int frames_evento_morte) {
+void deslizamento (FILE*arq, int frames_evento_morte) {
 
     for (int i = 0; i < N_ROCHAS; i++) {
         
@@ -186,9 +183,6 @@ void deslizamento (FILE*arq, t_objeto * rochas, t_objeto *diamantes, int frames_
             //Se o jogador morreu, toca o sample explosão, escreve o score no arquivo e o jogo termina
             if ((mapa[rochas[i].coord_x + 1][rochas[i].coord_y].item == PLAYER) && (rochas[i].movimentando == true)) {
                 al_play_sample (sample_explosion, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
-                if (pontos + tempo > score) {
-                    fprintf (arq, "%d\n", pontos + tempo);
-                }
                 morreu = 1;
             }
     }
@@ -203,22 +197,19 @@ void deslizamento (FILE*arq, t_objeto * rochas, t_objeto *diamantes, int frames_
 
             //Se o jogador morreu, toca o sample explosão, escreve o score no arquivo e o jogo termina 
             if ((mapa[diamantes[i].coord_x + 1][diamantes[i].coord_y].item == PLAYER) && (diamantes[i].movimentando == true)) {
-                al_play_sample (sample_explosion, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
-                if (pontos + tempo > score) {
-                    fprintf (arq, "%d\n", pontos + tempo);
-                }
+                al_play_sample (sample_explosion, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);  
                 morreu = 1;
             }
     } 
 }
 
-void atualiza_objetos_mapa (FILE *arq, int *atualizacao_objeto, t_objeto * rochas, t_objeto *diamantes, int *delay_morte) {
+void atualiza_objetos_mapa (FILE *arq, int *atualizacao_objeto, int *delay_morte) {
 
     //Apliquei um delay para a atualização dos objetos do mapa, senão fica muito rapido
     //Só atualiza a cada 10 ALLEGRO_EVENT_TIMER
     //Se chegar o tempo de atualizar, aplica o deslizamento
     if (*atualizacao_objeto == ATUALIZACAO_OBJETO) {
-        deslizamento (arq, rochas, diamantes, *delay_morte);
+        deslizamento (arq, *delay_morte);
         *atualizacao_objeto = 0;
     }
 

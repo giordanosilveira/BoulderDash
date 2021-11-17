@@ -15,7 +15,7 @@ void disp_post_draw () {
     al_flip_display ();
 }
 
-void desenha_mapa (t_objeto *rochas, t_objeto * diamante, int largura, int altura, t_player * player, int sprite_diamante, int sprite_explosao) {
+void desenha_mapa (int largura, int altura, t_player * player, int sprite_diamante, int sprite_explosao) {
 
     //Variável que auxiliam para printar o sprite correto do player
     int aux_ani_dir = 14;
@@ -65,8 +65,8 @@ void desenha_mapa (t_objeto *rochas, t_objeto * diamante, int largura, int altur
     }
     //Percorre o vetor de diamante e printa eles caso não estejam mortos
     for (int i = 0; i < N_DIAMANTES; i++){
-        if (diamante[i].morto == false)
-            al_draw_bitmap (sheet.diamante[sprite_diamante], diamante[i].coord_y*LARGURA_BITMAP_BLOCO, diamante[i].coord_x*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
+        if (diamantes[i].morto == false)
+            al_draw_bitmap (sheet.diamante[sprite_diamante], diamantes[i].coord_y*LARGURA_BITMAP_BLOCO, diamantes[i].coord_x*ALTURA_BITMAP_BLOCO + CORRECAO_DISPLAY, 0);
     }
 }
 
@@ -81,12 +81,14 @@ void desenha_hud () {
 
 void desenha_menu () {
     
+    //Fundo preto e desenha as mensagens
     al_clear_to_color (al_map_rgb(0, 0, 0));
     al_draw_filled_rectangle (0, 0, LARGURA_BUFFER, ALTURA_BUFFER/2, al_map_rgb (30, 144, 255));
     al_draw_textf (font, al_map_rgb (0, 0, 0), LARGURA_BUFFER/2, (ALTURA_BUFFER/2)/2, ALLEGRO_ALIGN_CENTER, "BOULDER");
     al_draw_textf (font, al_map_rgb (0, 0, 0), LARGURA_BUFFER/2, (ALTURA_BUFFER/2)/2 + 10, ALLEGRO_ALIGN_CENTER, "DASH");
     al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2 + 100, ALLEGRO_ALIGN_CENTER, "APERTE 'ENTER' PARA INICIAR");
     al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2 + 100 + 10, ALLEGRO_ALIGN_CENTER, "APERTE 'ESC' PARA SAIR");
+    al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2 + 100 + 20, ALLEGRO_ALIGN_CENTER, "APERTE 'H' PARA O MENU AJUDA");
 
 }
 
@@ -146,8 +148,8 @@ void desenha_standby () {
     
     //Escreve as mensagens
     al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2, ALLEGRO_ALIGN_CENTER, "Parabens você venceu :)");
-    al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2 + 10, ALLEGRO_ALIGN_CENTER, "Aperte 'ENTER' ou 'ESC' para sair" );
-
+    al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2 + 10, ALLEGRO_ALIGN_CENTER, "Aperte 'ENTER' se você quer jogar novamente");
+    al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2 + 20, ALLEGRO_ALIGN_CENTER, "Aperte 'ESC' para sair");
 }
 
 void desenha_gameover () {
@@ -155,7 +157,7 @@ void desenha_gameover () {
     al_clear_to_color (al_map_rgb(0, 0, 0));
     //Escreve as mensagens
     al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2, ALLEGRO_ALIGN_CENTER, "Você perdeu! QUE PENA:'( ");
-    al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2 + 10, ALLEGRO_ALIGN_CENTER, "Aperte 'ENTER' ou 'ESC' para sair" );
+    al_draw_textf (font, al_map_rgb (255, 255, 255), LARGURA_BUFFER/2, ALTURA_BUFFER/2 + 10, ALLEGRO_ALIGN_CENTER, "Aperte 'ENTER' para sair" );
 
 }
 

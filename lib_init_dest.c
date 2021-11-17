@@ -1,6 +1,33 @@
 #include "libDefines.h"
 #include "lib_init_dest.h"
 
+void reseta_jogo (t_player *player) {
+    
+    int largura_mapa, altura_mapa;
+
+    tempo = TEMPO_TOTAL/2;
+    morreu = 0;                                                     //Reinicializa a variável que diz se o jogador morreu
+
+    //Reinicializa a estrutura t_player
+    player->coord_x = PLAYER_COORD_X;
+    player->coord_y = PLAYER_COORD_Y;
+    player->direcao = 0;
+    player->tipo = 0;
+
+    //Reinicializa as pontuações
+    pontos = pontos + tempo;
+    contador_diamantes = 0;
+    diamante_minimos = DIAMANTES_MINIMOS_F1;
+    pontuacao_minima = diamante_minimos;
+    
+    carrega_mapa (&largura_mapa,&altura_mapa);                      //Reinicializa o mapa
+
+    //Reinicializa o t_objeto
+    inicializa_vetor_objetos (rochas, largura_mapa, altura_mapa, ROCHA);
+    inicializa_vetor_objetos (diamantes, largura_mapa, altura_mapa, DIAMANTE);
+
+}
+
 t_mapa ** aloca_matriz_mapa (int largura, int altura) {
 
     t_mapa **matriz;
@@ -248,8 +275,8 @@ void inicializa_variaveis ( int *largura_mapa, int *altura_mapa, t_player *playe
     sample_explosion = al_load_sample ("./resources/explosao.wav");
     testa_inicializacao (sample_explosion, "o sample explosao");
 
-    sample_select = al_load_sample ("./resources/select.wav");
-    testa_inicializacao (sample_select, "o sample select");
+    sample_pause = al_load_sample ("./resources/Pause.wav");
+    testa_inicializacao (sample_pause, "o sample Pause");
 
     carrega_mapa (largura_mapa, altura_mapa);                       //Carrega o mapa
 
@@ -269,9 +296,16 @@ void inicializa_variaveis ( int *largura_mapa, int *altura_mapa, t_player *playe
     diamante_minimos = DIAMANTES_MINIMOS_F1;
     pontuacao_minima = diamante_minimos;
     
+    //Inicializa o t_objeto
+    rochas = aloca_vetor_objeto (N_ROCHAS);
+    diamantes = aloca_vetor_objeto (N_DIAMANTES);
+
 }
 
 void destroi_tudo () {
+
+    free (rochas);
+    free (diamantes);
 
     //Desaloca a matriz mapa
     free (mapa[0]);
@@ -283,7 +317,7 @@ void destroi_tudo () {
     //Destrói as samples do jogo
     al_destroy_sample (sample_explosion);                       
     al_destroy_sample (sample_coin);
-    al_destroy_sample (sample_select);
+    al_destroy_sample (sample_pause);
 
     al_destroy_font (font);                                     //Destrói a fonte
     al_destroy_display (display);                               //Destrói o display

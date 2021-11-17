@@ -1,5 +1,6 @@
 #include "libDefines.h"
 #include "lib_geral.h"
+#include "lib_init_dest.h"
 #include "lib_graficos.h"
 #include "lib_move.h"
 
@@ -28,7 +29,7 @@ void pontuacao (bool *flag_dimas) {
 
 }
 
-void localiza_explosao (t_objeto*rochas, t_objeto *diamantes, t_player player) {
+void localiza_explosao (t_player player) {
 
     //Percorre todas as pedras e, se achar uma pedra que está logo entorno do jogador, destroi ela
     for (int i = 0; i < N_ROCHAS; i++) {
@@ -121,6 +122,11 @@ void estado_menu (unsigned char *key, ALLEGRO_EVENT *evento) {
                     estado_jogo = JOGANDO;
                 else if (key[ALLEGRO_KEY_ESCAPE])               //Teste para ver se o jogador quer sair do jogo
                     estado_jogo = TERMINOU;
+                else if (key[ALLEGRO_KEY_H]) {                  //Testa para ver se o jogador quer entrar no menu ajuda
+                    al_play_sample (sample_pause, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
+                    estado_ajuda (key, evento);             
+                    memset (key, 0, ALLEGRO_KEY_MAX * sizeof (unsigned char));  //Inicializando novamente o vetor key para limpar o buffer
+                }
                 //Bloco: Printa a mensagem do menu
                 disp_pre_draw ();
                 desenha_menu ();
@@ -197,7 +203,7 @@ void estado_ajuda (unsigned char *key, ALLEGRO_EVENT* evento) {
 
 }
 
-void estado_jogando (FILE *arq, t_player player, t_objeto * rochas, t_objeto* diamantes, int largura_mapa, int altura_mapa, unsigned char * key, ALLEGRO_EVENT *evento) {
+void estado_jogando (FILE *arq, t_player player, int largura_mapa, int altura_mapa, unsigned char * key, ALLEGRO_EVENT *evento) {
 
     int desenha = 0;                                        //Variável que controla se é possível desenhar
     int ajuda = 0;                                          //Variável que controla se a ajuda foi pedida    
@@ -226,13 +232,14 @@ void estado_jogando (FILE *arq, t_player player, t_objeto * rochas, t_objeto* di
 
                 //Se o jogador apertou a tecla 'H', vai para o estado_ajuda 
                 if (ajuda) {
+                    al_play_sample (sample_pause, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
                     estado_ajuda (key, evento);
                     ajuda = 0;
                 }
  
                 //Se o jogador morreu, trata desse evento
                 if (morreu) {
-                    localiza_explosao (rochas, diamantes, player);
+                    localiza_explosao (player);
                     anima_explosao (&sprite_explosao, &delay.morte);
                 }
                 delay.morte++;
@@ -241,7 +248,7 @@ void estado_jogando (FILE *arq, t_player player, t_objeto * rochas, t_objeto* di
                 pontuacao (&flag_diamante);
 
                 //Atualiza os objetos do mapa e testa para ver se o jogador morreu
-                atualiza_objetos_mapa (arq, &delay.atualizacao_objeto, rochas, diamantes, &delay.evento_morte);
+                atualiza_objetos_mapa (arq, &delay.atualizacao_objeto, &delay.evento_morte);
                 delay.atualizacao_objeto = delay.atualizacao_objeto + 1;                
                 delay.evento_morte = delay.evento_morte + 1;
 
@@ -260,7 +267,7 @@ void estado_jogando (FILE *arq, t_player player, t_objeto * rochas, t_objeto* di
             //Caso um tecla seja apertada, interpreta a ação dessa tecla
             //Também testa as colisões do jogador com o mapa, porém não ve se ele morreu
             case ALLEGRO_EVENT_KEY_CHAR :
-                ajuda = controle (arq, diamantes, rochas, evento, delay.atualizacao_objeto, &player.coord_x, &player.coord_y, &player.direcao, &flag_diamante);
+                ajuda = controle (arq, evento, delay.atualizacao_objeto, &player.coord_x, &player.coord_y, &player.direcao, &flag_diamante);
                 break;
 
             //Caso o jogador feche o display, termina o jogo
@@ -280,14 +287,14 @@ void estado_jogando (FILE *arq, t_player player, t_objeto * rochas, t_objeto* di
             disp_pre_draw ();
             al_clear_to_color (al_map_rgb(0,0,0));                      //Fundo preto
             desenha_hud ();
-            desenha_mapa (rochas, diamantes, largura_mapa, altura_mapa, &player, sprite_diamante, sprite_explosao);
+            desenha_mapa (largura_mapa, altura_mapa, &player, sprite_diamante, sprite_explosao);
             disp_post_draw ();
             desenha = 0;                                         
         }
     }
 }
 
-void estado_standby (ALLEGRO_EVENT* evento, unsigned char *key) {
+void estado_standby (t_player *player, ALLEGRO_EVENT* evento, unsigned char *key) {
 
     //Reinicializa com 0 a variável key
     memset (key, 0, ALLEGRO_KEY_MAX * sizeof(unsigned char));
@@ -300,8 +307,9 @@ void estado_standby (ALLEGRO_EVENT* evento, unsigned char *key) {
             
             case ALLEGRO_EVENT_TIMER:                           //Se o der o tempo para a atualização
                 if (key[ALLEGRO_KEY_ENTER])                     //Teste para ver se o jogador quer continuar
-                {    
-                    estado_jogo = TERMINOU;
+                {   
+                    reseta_jogo (player); 
+                    estado_jogo = JOGANDO;
                 }
                 else if (key[ALLEGRO_KEY_ESCAPE])               //Teste para ver se o jogador quer sair do jogo
                 {    
@@ -342,10 +350,7 @@ void estado_gameover (ALLEGRO_EVENT* evento, unsigned char *key) {
             case ALLEGRO_EVENT_TIMER:                           //Se o der o tempo para a atualização
                 if (key[ALLEGRO_KEY_ENTER])                     //Teste para ver se o jogador quer continuar
                     estado_jogo = TERMINOU;
-                else if (key[ALLEGRO_KEY_ESCAPE])               //Teste para ver se o jogador quer sair do jogo
-                    estado_jogo = TERMINOU;
-
-
+                
                 //Bloco: Printa a mensagem do fim de jogo
                 disp_pre_draw ();
                 desenha_gameover ();

@@ -9,7 +9,7 @@ void disp_pre_draw ();
 void disp_post_draw ();
 
 //Função que printa o mapa
-void desenha_mapa (t_objeto *, t_objeto * , int , int , t_player * , int , int );
+void desenha_mapa (int , int , t_player * , int , int );
 
 //Desenha a pontução e o progresso do jogador
 void desenha_hud ();

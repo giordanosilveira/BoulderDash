@@ -1,6 +1,9 @@
 #ifndef __INITDEST__
 #define __INITDEST__
 
+//Função que reseta o jogo
+void reseta_jogo (t_player *player);
+
 //Função que aloca um matriz do tipo mapa
 //Retorno o ponteiro da matriz
 t_mapa ** aloca_matriz_mapa (int , int );

@@ -109,17 +109,19 @@ typedef struct t_contaFrames
 enum estados_t {MENU, JOGANDO, FIMDAPARTIDA, GAMEOVER, TERMINOU};     //Possíveis estados do jogo
 extern enum estados_t estado_jogo;
 
-extern t_sprites sheet;                                            //Sprites de todos os itens do mapa
-extern t_mapa **mapa;                                              //Matriz do mapa
+extern t_objeto *rochas;
+extern t_objeto *diamantes;
+extern t_sprites sheet;                                             //Sprites de todos os itens do mapa
+extern t_mapa **mapa;                                               //Matriz do mapa
 
-extern ALLEGRO_TIMER *timer;                                       //Temporizador 
-extern ALLEGRO_EVENT_QUEUE *fila;                                  //fila de eventos
-extern ALLEGRO_DISPLAY *display;                                   //Tela do jogo
-extern ALLEGRO_BITMAP *buffer;                                     //Bitmap para um pré print dos itens do jogo
-extern ALLEGRO_FONT *font;                                         //fonte de texto
-extern ALLEGRO_SAMPLE *sample_coin;
-extern ALLEGRO_SAMPLE *sample_explosion;
-extern ALLEGRO_SAMPLE *sample_select;
+extern ALLEGRO_TIMER *timer;                                        //Temporizador 
+extern ALLEGRO_EVENT_QUEUE *fila;                                   //fila de eventos
+extern ALLEGRO_DISPLAY *display;                                    //Tela do jogo
+extern ALLEGRO_BITMAP *buffer;                                      //Bitmap para um pré print dos itens do jogo
+extern ALLEGRO_FONT *font;                                          //fonte de texto
+extern ALLEGRO_SAMPLE *sample_coin;                                 //Sample para as moedas
+extern ALLEGRO_SAMPLE *sample_explosion;                            //Sample para as explosões
+extern ALLEGRO_SAMPLE *sample_pause;                                //Sample para o menu pause
 
 extern int morreu;
 
